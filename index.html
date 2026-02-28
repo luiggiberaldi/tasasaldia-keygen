@@ -3,28 +3,40 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master Key Gen - TasasAlDía</title>
+    <meta name="viewport" content="width=device-width,
+      initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#fcd535">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="VIP KeyGen">
+    <title>Master Key Gen · Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #020617;
             color: #f8fafc;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont,
+                "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             -webkit-font-smoothing: antialiased;
         }
 
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        .glass {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
         }
 
         input {
             text-transform: uppercase;
+        }
+
+        input[type=password] {
+            text-transform: none;
         }
 
         input::placeholder {
@@ -32,183 +44,620 @@
             color: #475569;
         }
 
-        /* Hide scrollbar for cleaner look on mobile */
         ::-webkit-scrollbar {
             display: none;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
 
 <body class="min-h-screen flex items-center justify-center p-4">
-    <div class="glass-panel w-full max-w-sm rounded-[2rem] p-6 sm:p-8 relative overflow-hidden">
 
-        <!-- Decorative Glow -->
-        <div class="absolute -top-20 -right-20 w-40 h-40 bg-brand/20 blur-3xl rounded-full pointer-events-none"></div>
-        <div class="absolute -bottom-20 -left-20 w-40 h-40 bg-blue-500/10 blur-3xl rounded-full pointer-events-none">
+    <!-- ════════════════════════════
+     PANTALLA 1 — PIN DE ACCESO
+════════════════════════════ -->
+    <div id="pinScreen" class="glass w-full max-w-sm rounded-[2rem] p-7 relative overflow-hidden">
+        <div class="absolute -top-16 -right-16 w-36 h-36
+      bg-yellow-400/10 blur-3xl rounded-full"></div>
+
+        <div class="text-center mb-7">
+            <div class="inline-flex items-center justify-center w-14 h-14
+          rounded-2xl bg-slate-800/60 border border-slate-700/50
+          mb-4 text-yellow-400 shadow-lg">
+                <i class="fa-solid fa-shield-halved text-2xl"></i>
+            </div>
+            <h1 class="text-xl font-black text-white">Panel Administrativo</h1>
+            <p class="text-[11px] text-slate-500 mt-1 uppercase
+          tracking-widest font-bold">
+                Acceso Restringido
+            </p>
         </div>
 
-        <div class="relative z-10">
-            <!-- Header -->
-            <div class="text-center mb-8">
-                <div
-                    class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-slate-800/50 border border-slate-700/50 mb-4 text-[#fcd535] shadow-lg">
-                    <i class="fa-solid fa-key text-xl"></i>
-                </div>
-                <h1 class="text-2xl font-black tracking-tight text-white">TasasAlDía <span
-                        class="text-[#fcd535]">VIP</span></h1>
-                <p class="text-xs font-semibold text-slate-400 mt-1 uppercase tracking-widest">Master Key Generator</p>
+        <div class="space-y-3">
+            <div class="relative">
+                <i class="fa-solid fa-lock absolute left-3.5 top-1/2
+              -translate-y-1/2 text-slate-500 text-sm pointer-events-none"></i>
+                <input type="password" id="pinInput" placeholder="PIN de administrador" maxlength="30" class="w-full bg-slate-900/60 border border-slate-700/50
+                text-white rounded-xl py-3.5 pl-10 pr-4
+                focus:outline-none focus:border-yellow-400
+                focus:ring-1 focus:ring-yellow-400/30
+                transition-all font-mono text-sm shadow-inner">
             </div>
-
-            <!-- Input Form -->
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">ID del
-                        Cliente</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                            <i class="fa-solid fa-fingerprint text-slate-500"></i>
-                        </div>
-                        <input type="text" id="devId" placeholder="TASAS-XXXX"
-                            class="w-full bg-slate-900/50 border border-slate-700/50 text-white rounded-xl py-3.5 pl-10 pr-4 focus:outline-none focus:border-[#fcd535] focus:ring-1 focus:ring-[#fcd535] transition-all font-mono text-sm shadow-inner placeholder:font-sans">
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="space-y-3 pt-2">
-                    <button onclick="generate()"
-                        class="w-full bg-[#fcd535] hover:bg-[#eab308] text-slate-900 font-bold rounded-xl py-3.5 px-4 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-[#fcd535]/10">
-                        <i class="fa-solid fa-bolt"></i>
-                        <span>Generar Licencia Premium</span>
-                    </button>
-
-                    <button onclick="setDemo()"
-                        class="w-full bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 font-bold border border-slate-700/50 rounded-xl py-3.5 px-4 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm">
-                        <i class="fa-solid fa-clock opacity-70"></i>
-                        <span>Generar Licencia Demo (24h)</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Result Area -->
-            <div id="resultContainer" class="mt-6 hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div class="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/20 relative group">
-                    <p class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-2">Código Generado</p>
-                    <div class="flex items-center justify-between gap-3">
-                        <p id="resultText"
-                            class="font-mono text-lg sm:text-xl font-bold text-emerald-400 tracking-wider truncate"></p>
-                        <button onclick="copyToClipboard()"
-                            class="shrink-0 w-10 h-10 rounded-lg bg-emerald-900/40 text-emerald-400 hover:bg-emerald-900/60 hover:text-white transition-all flex items-center justify-center"
-                            title="Copiar al portapapeles">
-                            <i id="copyIcon" class="fa-regular fa-copy"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
+            <button onclick="checkPin()" class="w-full bg-yellow-400 hover:bg-yellow-300 text-slate-900
+            font-black rounded-xl py-3.5 transition-all active:scale-95
+            flex items-center justify-center gap-2 shadow-lg
+            shadow-yellow-400/10 text-sm uppercase tracking-wide">
+                <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                Entrar
+            </button>
+            <p id="pinError" class="text-center text-xs text-rose-400 font-bold
+            hidden animate-pulse pt-1">
+                PIN incorrecto. Intentos restantes: <span id="attemptsLeft">5</span>
+            </p>
         </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div id="toast"
-        class="fixed top-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-800 text-white text-xs font-bold rounded-full border border-slate-700 shadow-xl opacity-0 translate-y-[-10px] transition-all duration-300 pointer-events-none z-50 flex items-center gap-2">
-        <i class="fa-solid fa-circle-check text-emerald-400"></i>
-        <span id="toastMessage">Código copiado</span>
+    <!-- ════════════════════════════
+     PANTALLA 2 — GENERADOR
+════════════════════════════ -->
+    <div id="mainScreen" class="hidden w-full max-w-sm space-y-4">
+
+        <!-- Selector de Producto -->
+        <div class="glass rounded-2xl p-4">
+            <p class="text-[10px] font-black text-slate-500 uppercase
+          tracking-widest mb-3">
+                Seleccionar Producto
+            </p>
+            <div class="grid grid-cols-2 gap-2">
+                <!-- TasasAlDía -->
+                <button onclick="selectProduct('tasas')" id="btn_tasas" class="product-btn flex flex-col items-center gap-2 p-3
+                rounded-xl border-2 transition-all active:scale-95
+                border-yellow-400 bg-yellow-400/10 text-yellow-400">
+                    <i class="fa-solid fa-chart-line text-lg"></i>
+                    <div class="text-center">
+                        <p class="text-[11px] font-black leading-tight">
+                            TasasAlDía
+                        </p>
+                        <p class="text-[9px] opacity-60 font-bold">TASAS-XXXX</p>
+                    </div>
+                </button>
+                <!-- PreciosAlDía -->
+                <button onclick="selectProduct('bodega')" id="btn_bodega" class="product-btn flex flex-col items-center gap-2 p-3
+                rounded-xl border-2 transition-all active:scale-95
+                border-slate-700 bg-slate-800/40 text-slate-400
+                hover:border-slate-500">
+                    <i class="fa-solid fa-store text-lg"></i>
+                    <div class="text-center">
+                        <p class="text-[11px] font-black leading-tight">
+                            PreciosAlDía
+                        </p>
+                        <p class="text-[9px] opacity-60 font-bold">PDA-XXXX</p>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Formulario principal -->
+        <div class="glass rounded-2xl p-5 space-y-4">
+
+            <!-- Header dinámico -->
+            <div class="flex items-center gap-3">
+                <div id="productIcon" class="w-10 h-10 rounded-xl flex items-center justify-center
+                bg-yellow-400/15 border border-yellow-400/30 text-yellow-400
+                shrink-0 shadow-sm text-sm">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <div>
+                    <h2 id="productTitle" class="text-base font-black text-white leading-tight">
+                        TasasAlDía Premium
+                    </h2>
+                    <p id="productSub" class="text-[10px] text-slate-500 font-bold uppercase
+                    tracking-wider">
+                        Master Key Generator
+                    </p>
+                </div>
+            </div>
+
+            <!-- Tipo de licencia -->
+            <div>
+                <p class="text-[10px] font-black text-slate-500
+              uppercase tracking-widest mb-2">
+                    Tipo de licencia
+                </p>
+                <div class="flex gap-1.5">
+                    <button onclick="setType('permanent')" id="type_permanent" class="type-btn flex-1 py-2 rounded-lg text-[10px] font-black
+                    uppercase transition-all active:scale-95
+                    bg-yellow-400 text-slate-900">
+                        <i class="fa-solid fa-infinity mr-1"></i>Permanente
+                    </button>
+                    <button onclick="setType('demo30')" id="type_demo30" class="type-btn flex-1 py-2 rounded-lg text-[10px] font-black
+                    uppercase transition-all active:scale-95
+                    bg-slate-800/60 text-slate-400 border border-slate-700/60
+                    hover:border-slate-500">
+                        30 días
+                    </button>
+                    <button onclick="setType('demo7')" id="type_demo7" class="type-btn flex-1 py-2 rounded-lg text-[10px] font-black
+                    uppercase transition-all active:scale-95
+                    bg-slate-800/60 text-slate-400 border border-slate-700/60
+                    hover:border-slate-500">
+                        7 días
+                    </button>
+                </div>
+            </div>
+
+            <!-- Input Device ID -->
+            <div>
+                <label class="block text-[10px] font-black text-slate-500
+              uppercase tracking-widest mb-2">
+                    ID del Dispositivo Cliente
+                </label>
+                <div class="relative">
+                    <i class="fa-solid fa-fingerprint absolute left-3.5
+                  top-1/2 -translate-y-1/2 text-slate-500
+                  pointer-events-none text-sm"></i>
+                    <input type="text" id="devId" placeholder="TASAS-XXXX o PDA-XXXX" class="w-full bg-slate-900/60 border border-slate-700/50
+                    text-white rounded-xl py-3.5 pl-10 pr-4
+                    focus:outline-none focus:border-yellow-400
+                    focus:ring-1 focus:ring-yellow-400/30 transition-all
+                    font-mono text-sm shadow-inner">
+                </div>
+            </div>
+
+            <!-- Nota expiración -->
+            <div id="expiryNote" class="hidden text-[10px] text-amber-400 font-bold
+            bg-amber-950/30 border border-amber-500/20 rounded-lg
+            px-3 py-2 flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span id="expiryText"></span>
+            </div>
+
+            <!-- Generar -->
+            <button onclick="generate()" class="w-full bg-yellow-400 hover:bg-yellow-300 text-slate-900
+            font-black rounded-xl py-3.5 transition-all active:scale-95
+            flex items-center justify-center gap-2 shadow-lg
+            shadow-yellow-400/10 text-sm uppercase tracking-wide">
+                <i class="fa-solid fa-bolt"></i>
+                Generar Licencia
+            </button>
+        </div>
+
+        <!-- Resultado -->
+        <div id="resultContainer" class="hidden glass rounded-2xl p-4 fade-in space-y-3">
+            <div class="flex items-center justify-between">
+                <p class="text-[10px] font-black text-emerald-500
+              uppercase tracking-widest">
+                    Código Generado
+                </p>
+                <span id="typeBadge" class="text-[9px] font-black uppercase px-2 py-0.5
+                rounded-full bg-emerald-900/40 text-emerald-400">
+                    Permanente
+                </span>
+            </div>
+
+            <div class="flex items-center justify-between gap-3
+          bg-slate-900/50 rounded-xl px-3 py-3 border
+          border-slate-800/50">
+                <p id="resultText" class="font-mono text-xl font-black text-emerald-400
+                tracking-wider truncate"></p>
+                <button onclick="copyCode()" class="shrink-0 w-9 h-9 rounded-lg bg-emerald-900/40
+                text-emerald-400 hover:bg-emerald-900/70
+                hover:text-white transition-all flex items-center
+                justify-center">
+                    <i id="copyIcon" class="fa-regular fa-copy text-sm"></i>
+                </button>
+            </div>
+
+            <p id="expiryResult" class="text-[10px] text-amber-400 font-bold hidden"></p>
+
+            <!-- Info del dispositivo -->
+            <div class="flex items-center gap-2 text-[10px] text-slate-500
+          font-bold">
+                <i class="fa-solid fa-mobile-screen-button opacity-50"></i>
+                <span id="deviceInfo"></span>
+                <span class="opacity-40 mx-1">·</span>
+                <span id="productInfo" class="text-yellow-400/70"></span>
+            </div>
+
+            <!-- WhatsApp -->
+            <button onclick="sendWhatsApp()" class="w-full bg-[#25D366]/10 hover:bg-[#25D366]/20
+            text-[#25D366] font-bold border border-[#25D366]/20
+            rounded-xl py-2.5 transition-all active:scale-95
+            flex items-center justify-center gap-2 text-sm">
+                <i class="fa-brands fa-whatsapp"></i>
+                Enviar por WhatsApp
+            </button>
+        </div>
+
+        <!-- Log de sesión -->
+        <div id="logSection" class="hidden glass rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-3">
+                <p class="text-[10px] font-black text-slate-500
+              uppercase tracking-widest flex items-center gap-1.5">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    Historial de sesión
+                </p>
+                <button onclick="clearLog()" class="text-[9px] text-slate-600 hover:text-rose-400
+                font-black uppercase transition-colors">
+                    Limpiar
+                </button>
+            </div>
+            <div id="logList" class="space-y-2 max-h-48 overflow-y-auto">
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 px-4 py-2.5
+    bg-slate-800 text-white text-xs font-bold rounded-full
+    border border-slate-700 shadow-2xl opacity-0
+    translate-y-[-12px] transition-all duration-300
+    pointer-events-none z-50 flex items-center gap-2">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMsg">OK</span>
     </div>
 
     <script>
-        // ESTA CLAVE DEBE SER LA MISMA QUE EN useSecurity.js
-        const MASTER_SECRET_KEY = "VENEZUELA_PRO_2026_GLOBAL";
+        // ═══════════════════════════════════════════
+        // CONFIGURACIÓN CENTRAL — SOLO EDITAR AQUÍ
+        // ═══════════════════════════════════════════
 
-        // Configuración de Theme
-        const themeColor = "#fcd535";
-        document.documentElement.style.setProperty('--brand-color', themeColor);
+        const ADMIN_PIN = 'PAD2026VIP'     // Cambia esto a tu PIN secreto
+        const ADMIN_WA = '584124051793'   // Tu WhatsApp
 
-        // Permitir enter para generar
-        document.getElementById('devId').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') generate();
-        });
-
-        function setDemo() {
-            document.getElementById('devId').value = 'TASAS-DEMO';
-            generate();
+        // Claves DEBEN ser idénticas a cada app
+        const PRODUCTS = {
+            tasas: {
+                name: 'TasasAlDía Premium',
+                shortName: 'TasasAlDía',
+                icon: 'fa-chart-line',
+                color: '#fcd535',
+                salt: 'VENEZUELAPRO2026GLOBAL',  // = MASTER_SECRET_KEY en useSecurity.js de TasasAlDía
+                idPrefix: 'TASAS',
+                tokenKey: 'premium_token',           // = localStorage key en TasasAlDía
+            },
+            bodega: {
+                name: 'PreciosAlDía Business',
+                shortName: 'PreciosAlDía',
+                icon: 'fa-store',
+                color: '#10b981',
+                salt: 'PRECIOS_ALDIA_BODEGA_2026',  // = VITE_LICENSE_SALT en .env de PreciosAlDía
+                idPrefix: 'PDA',
+                tokenKey: 'pda_premium_token',       // = localStorage key en PreciosAlDía
+            },
         }
+
+        // ═══════════════════════════════════════════
+        // ESTADO
+        // ═══════════════════════════════════════════
+        let currentProduct = 'tasas'
+        let currentType = 'permanent'
+        let pinAttempts = 0
+        let pinBlocked = false
+        let sessionLog = []
+        let lastGenerated = null
+
+        // ═══════════════════════════════════════════
+        // PIN
+        // ═══════════════════════════════════════════
+        document.getElementById('pinInput')
+            .addEventListener('keypress', e => {
+                if (e.key === 'Enter') checkPin()
+            })
+
+        function checkPin() {
+            if (pinBlocked) {
+                showToast('Acceso bloqueado. Recarga la página.', 'error')
+                return
+            }
+            const val = document.getElementById('pinInput').value
+            if (val === ADMIN_PIN) {
+                document.getElementById('pinScreen').classList.add('hidden')
+                document.getElementById('mainScreen').classList.remove('hidden')
+                document.getElementById('mainScreen').classList.add('fade-in')
+            } else {
+                pinAttempts++
+                const left = 5 - pinAttempts
+                document.getElementById('attemptsLeft').innerText = left
+                document.getElementById('pinError').classList.remove('hidden')
+                document.getElementById('pinInput').value = ''
+                document.getElementById('pinInput').focus()
+                if (navigator.vibrate) navigator.vibrate([60, 40, 60])
+                if (pinAttempts >= 5) {
+                    pinBlocked = true
+                    showToast('Demasiados intentos. Recarga para intentar de nuevo.', 'error')
+                } else {
+                    showToast(`PIN incorrecto (${pinAttempts}/5)`, 'error')
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════
+        // SELECCIÓN DE PRODUCTO
+        // ═══════════════════════════════════════════
+        function selectProduct(id) {
+            currentProduct = id
+            const p = PRODUCTS[id]
+
+            // Actualizar botones de producto
+            Object.keys(PRODUCTS).forEach(k => {
+                const btn = document.getElementById(`btn_${k}`)
+                const prod = PRODUCTS[k]
+                if (k === id) {
+                    btn.className = btn.className
+                        .replace('border-slate-700 bg-slate-800/40 text-slate-400 hover:border-slate-500', '')
+                    btn.style.borderColor = prod.color
+                    btn.style.color = prod.color
+                    btn.style.backgroundColor = prod.color + '18'
+                } else {
+                    btn.style.borderColor = ''
+                    btn.style.color = ''
+                    btn.style.backgroundColor = ''
+                    btn.className = btn.className + ' border-slate-700 bg-slate-800/40 text-slate-400'
+                }
+            })
+
+            // Actualizar header
+            document.getElementById('productIcon').innerHTML =
+                `<i class="fa-solid ${p.icon}"></i>`
+            document.getElementById('productIcon').style.color = p.color
+            document.getElementById('productIcon').style.borderColor = p.color + '40'
+            document.getElementById('productIcon').style.backgroundColor = p.color + '15'
+            document.getElementById('productTitle').innerText = p.name
+            document.getElementById('productSub').innerText = `${p.idPrefix}-XXXX · Key Generator`
+
+            // Actualizar placeholder
+            document.getElementById('devId').placeholder =
+                `${p.idPrefix}-XXXX`
+
+            // Limpiar resultado
+            document.getElementById('resultContainer').classList.add('hidden')
+            document.getElementById('resultContainer').classList.remove('fade-in')
+        }
+
+        // ═══════════════════════════════════════════
+        // TIPO DE LICENCIA
+        // ═══════════════════════════════════════════
+        function setType(type) {
+            currentType = type
+            const types = ['permanent', 'demo30', 'demo7']
+            types.forEach(t => {
+                const btn = document.getElementById(`type_${t}`)
+                if (t === type) {
+                    btn.style.backgroundColor = PRODUCTS[currentProduct].color
+                    btn.style.color = '#0f172a'
+                    btn.style.borderColor = 'transparent'
+                } else {
+                    btn.style.backgroundColor = ''
+                    btn.style.color = ''
+                    btn.style.borderColor = ''
+                }
+            })
+
+            const note = document.getElementById('expiryNote')
+            const noteText = document.getElementById('expiryText')
+            if (type === 'permanent') {
+                note.classList.add('hidden')
+            } else {
+                note.classList.remove('hidden')
+                note.classList.add('flex')
+                noteText.innerText = type === 'demo30'
+                    ? 'Licencia temporal — expira en 30 días'
+                    : 'Licencia temporal — expira en 7 días'
+            }
+
+            document.getElementById('resultContainer').classList.add('hidden')
+        }
+
+        // ═══════════════════════════════════════════
+        // GENERADOR SHA-256
+        // ═══════════════════════════════════════════
+        document.getElementById('devId')
+            .addEventListener('keypress', e => {
+                if (e.key === 'Enter') generate()
+            })
 
         async function generate() {
-            const devId = document.getElementById('devId').value.trim().toUpperCase();
-
+            const devId = document.getElementById('devId').value.trim().toUpperCase()
             if (!devId) {
-                showToast("Por favor, introduce el ID del cliente", "error");
-                document.getElementById('devId').focus();
-                return;
+                showToast('Introduce el ID del dispositivo', 'error')
+                document.getElementById('devId').focus()
+                return
             }
+
+            const p = PRODUCTS[currentProduct]
 
             try {
-                // Generador SHA-256
-                const encoder = new TextEncoder();
-                const data = encoder.encode(devId + MASTER_SECRET_KEY);
-                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-                const hashArray = Array.from(new Uint8Array(hashBuffer));
-                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+                const encoder = new TextEncoder()
+                const data = encoder.encode(devId + p.salt)
+                const hash = await crypto.subtle.digest('SHA-256', data)
+                const hex = Array.from(new Uint8Array(hash))
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('').toUpperCase()
 
-                const finalKey = `ACTIV-${hashHex.substring(0, 4)}-${hashHex.substring(4, 8)}`;
+                const code = `ACTIV-${hex.slice(0, 4)}-${hex.slice(4, 8)}`
+
+                // Calcular expiración
+                let expiresAt = null
+                let expiresText = null
+                const days = currentType === 'demo30' ? 30
+                    : currentType === 'demo7' ? 7 : 0
+                if (days > 0) {
+                    expiresAt = Date.now() + days * 24 * 60 * 60 * 1000
+                    expiresText = `Expira el ${new Date(expiresAt)
+                        .toLocaleDateString('es-VE', {
+                            day: '2-digit', month: 'long', year: 'numeric'
+                        })}`
+                }
+
+                lastGenerated = {
+                    code, devId, expiresAt, expiresText,
+                    product: currentProduct,
+                    type: currentType,
+                }
 
                 // Mostrar resultado
-                const container = document.getElementById('resultContainer');
-                const textEl = document.getElementById('resultText');
+                document.getElementById('resultText').innerText = code
+                document.getElementById('typeBadge').innerText =
+                    currentType === 'permanent' ? 'Permanente'
+                        : currentType === 'demo30' ? '30 días' : '7 días'
+                document.getElementById('deviceInfo').innerText = devId
+                document.getElementById('productInfo').innerText = p.shortName
 
-                textEl.innerText = finalKey;
-                container.classList.remove('hidden');
+                const expEl = document.getElementById('expiryResult')
+                if (expiresText) {
+                    expEl.innerText = expiresText
+                    expEl.classList.remove('hidden')
+                } else {
+                    expEl.classList.add('hidden')
+                }
 
-                // Efecto de aparición suave si ya estaba visible
-                container.classList.remove('animate-in');
-                void container.offsetWidth; // trigger reflow
-                container.classList.add('animate-in');
+                const container = document.getElementById('resultContainer')
+                container.classList.remove('hidden', 'fade-in')
+                void container.offsetWidth
+                container.classList.add('fade-in')
+
+                addToLog(devId, code, currentType, expiresText, p.shortName)
+
             } catch (err) {
-                console.error(err);
-                showToast("Error generando código. Use un navegador moderno.", "error");
+                console.error(err)
+                showToast('Error generando código', 'error')
             }
         }
 
-        function copyToClipboard() {
-            const textToCopy = document.getElementById('resultText').innerText;
-            if (!textToCopy) return;
-
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                showToast("Código copiado al portapapeles", "success");
-
-                // Cambiar icono temporalmente
-                const icon = document.getElementById('copyIcon');
-                icon.className = "fa-solid fa-check";
+        // ═══════════════════════════════════════════
+        // COPIAR
+        // ═══════════════════════════════════════════
+        function copyCode() {
+            const text = document.getElementById('resultText').innerText
+            if (!text) return
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Código copiado')
+                const icon = document.getElementById('copyIcon')
+                icon.className = 'fa-solid fa-check text-sm'
                 setTimeout(() => {
-                    icon.className = "fa-regular fa-copy";
-                }, 2000);
-            }).catch(err => {
-                showToast("Error al copiar. Copie manualmente.", "error");
-            });
+                    icon.className = 'fa-regular fa-copy text-sm'
+                }, 2000)
+            }).catch(() => {
+                showToast('Error al copiar — copie manualmente', 'error')
+            })
         }
 
-        let toastTimeout;
-        function showToast(message, type = "success") {
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toastMessage');
-            const icon = toast.querySelector('i');
+        // ═══════════════════════════════════════════
+        // WHATSAPP
+        // ═══════════════════════════════════════════
+        function sendWhatsApp() {
+            if (!lastGenerated) return
+            const { code, devId, type, expiresText, product } = lastGenerated
+            const p = PRODUCTS[product]
+            const tipoLabel =
+                type === 'permanent' ? 'Licencia Permanente'
+                    : type === 'demo30' ? 'Licencia 30 días'
+                        : 'Licencia 7 días'
 
-            toastMessage.innerText = message;
+            const lines = [
+                `*${p.name}*`,
+                `━━━━━━━━━━━━━━━━━━`,
+                `Tipo: ${tipoLabel}`,
+                `Dispositivo: ${devId}`,
+                `Codigo: *${code}*`,
+                expiresText || null,
+                `━━━━━━━━━━━━━━━━━━`,
+                `Ingresa el codigo en la app:`,
+                `Configuracion > Activar Licencia`,
+            ].filter(Boolean).join('\n')
 
-            if (type === "error") {
-                icon.className = "fa-solid fa-triangle-exclamation text-rose-400";
-            } else {
-                icon.className = "fa-solid fa-circle-check text-emerald-400";
-            }
+            window.open(
+                `https://wa.me/?text=${encodeURIComponent(lines)}`,
+                '_blank'
+            )
+        }
 
-            toast.style.opacity = '1';
-            toast.style.transform = 'translate(-50%, 0)';
+        // ═══════════════════════════════════════════
+        // LOG DE SESIÓN
+        // ═══════════════════════════════════════════
+        function addToLog(devId, code, type, expiresText, productName) {
+            sessionLog.unshift({ devId, code, type, expiresText, productName })
+            const section = document.getElementById('logSection')
+            const list = document.getElementById('logList')
+            section.classList.remove('hidden')
+            list.innerHTML = sessionLog.slice(0, 15).map((e, i) => `
+        <div class="flex items-center justify-between gap-2 px-3 py-2
+          bg-slate-900/50 rounded-xl border border-slate-800/40">
+            <div class="min-w-0">
+                <p class="text-[10px] font-mono font-black
+                  text-slate-300 truncate">
+                  ${e.devId}
+                  <span class="text-[8px] text-slate-600
+                    font-bold ml-1 uppercase">${e.productName}</span>
+                </p>
+                <p class="text-[9px] text-slate-600 font-bold
+                  font-mono mt-0.5">
+                  ${e.code}
+                  <span class="normal-case ml-1">
+                    ${e.type !== 'permanent'
+                    ? '· ' + (e.expiresText || '')
+                    : '· Permanente'}
+                  </span>
+                </p>
+            </div>
+            <button onclick="navigator.clipboard.writeText('${e.code}')
+              .then(()=>showToast('Copiado'))"
+              class="shrink-0 text-slate-600 hover:text-emerald-400
+                transition-colors p-1.5 rounded-lg hover:bg-slate-800">
+                <i class="fa-regular fa-copy text-xs"></i>
+            </button>
+        </div>
+    `).join('')
+        }
 
-            clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translate(-50%, -10px)';
-            }, 3000);
+        function clearLog() {
+            sessionLog = []
+            document.getElementById('logSection').classList.add('hidden')
+            document.getElementById('logList').innerHTML = ''
+        }
+
+        // ═══════════════════════════════════════════
+        // TOAST
+        // ═══════════════════════════════════════════
+        let toastTimer
+        function showToast(msg, type = 'success') {
+            const el = document.getElementById('toast')
+            const icon = document.getElementById('toastIcon')
+            const text = document.getElementById('toastMsg')
+            text.innerText = msg
+            icon.className = type === 'error'
+                ? 'fa-solid fa-triangle-exclamation text-rose-400'
+                : 'fa-solid fa-circle-check text-emerald-400'
+            el.style.opacity = '1'
+            el.style.transform = 'translate(-50%, 0)'
+            clearTimeout(toastTimer)
+            toastTimer = setTimeout(() => {
+                el.style.opacity = '0'
+                el.style.transform = 'translate(-50%, -12px)'
+            }, 3000)
+        }
+
+        // PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(() => { })
+            })
         }
     </script>
 </body>
