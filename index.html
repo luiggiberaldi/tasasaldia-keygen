@@ -63,6 +63,60 @@
                 transform: translateY(0);
             }
         }
+
+        /* Custom Confirm Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-box {
+            background: linear-gradient(145deg, #0f172a, #1e293b);
+            border: 1px solid rgba(248, 113, 113, 0.15);
+            border-radius: 1rem;
+            padding: 1.75rem;
+            max-width: 340px;
+            width: 90%;
+            box-shadow: 0 25px 60px -12px rgba(239, 68, 68, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.03);
+            transform: scale(0.92) translateY(10px);
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-overlay.active .modal-box {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+
+        .modal-icon i {
+            font-size: 1.25rem;
+            color: #f87171;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -763,20 +817,26 @@
         }
 
         async function revokeLicense(id) {
-            if (!confirm('¿Seguro que deseas revocar esta licencia? Se desactivará inmediatamente en el dispositivo del cliente la próxima vez que se conecte.')) return;
+            const confirmed = await showConfirmModal(
+                'Revocar Licencia',
+                'Esta acción desactivará permanentemente la licencia del dispositivo asociado. El cliente perderá acceso en su próxima verificación.',
+                'Confirmar Revocación',
+                'Cancelar'
+            )
+            if (!confirmed) return;
 
             try {
-                showToast('Revocando...', 'success')
+                showToast('Procesando revocación...', 'success')
                 const { error } = await db.from('licenses')
                     .update({ active: false })
                     .eq('id', id);
 
                 if (error) throw error;
-                showToast('Licencia revocada', 'success')
+                showToast('Licencia revocada exitosamente', 'success')
                 loadDashboard()
             } catch (err) {
                 console.error(err);
-                showToast('Error al revocar', 'error')
+                showToast('Error al procesar la revocación', 'error')
             }
         }
 
@@ -784,6 +844,49 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js').catch(() => { })
+            })
+        }
+
+        // ═══════════════════════════════════
+        // Custom Confirm Modal
+        // ═══════════════════════════════════
+        function showConfirmModal(title, message, confirmText = 'Confirmar', cancelText = 'Cancelar') {
+            return new Promise((resolve) => {
+                // Remove any existing modal
+                const existing = document.getElementById('confirmModal')
+                if (existing) existing.remove()
+
+                const overlay = document.createElement('div')
+                overlay.id = 'confirmModal'
+                overlay.className = 'modal-overlay'
+                overlay.innerHTML = `
+                    <div class="modal-box">
+                        <div class="modal-icon">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <h3 style="text-align:center; font-size:0.95rem; font-weight:800; color:#f1f5f9; margin-bottom:0.5rem; letter-spacing:-0.01em;">${title}</h3>
+                        <p style="text-align:center; font-size:0.75rem; color:#94a3b8; line-height:1.5; margin-bottom:1.25rem;">${message}</p>
+                        <div style="display:flex; gap:0.5rem;">
+                            <button id="modalCancel" style="flex:1; padding:0.6rem; border-radius:0.6rem; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; background:rgba(51,65,85,0.5); border:1px solid rgba(100,116,139,0.2); color:#94a3b8; cursor:pointer; transition:all 0.15s;">${cancelText}</button>
+                            <button id="modalConfirm" style="flex:1; padding:0.6rem; border-radius:0.6rem; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#f87171; cursor:pointer; transition:all 0.15s;">${confirmText}</button>
+                        </div>
+                    </div>
+                `
+
+                document.body.appendChild(overlay)
+                requestAnimationFrame(() => overlay.classList.add('active'))
+
+                const close = (result) => {
+                    overlay.classList.remove('active')
+                    setTimeout(() => overlay.remove(), 200)
+                    resolve(result)
+                }
+
+                overlay.querySelector('#modalConfirm').onclick = () => close(true)
+                overlay.querySelector('#modalCancel').onclick = () => close(false)
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) close(false)
+                })
             })
         }
     </script>
