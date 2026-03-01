@@ -586,7 +586,6 @@
         }
 
         function unlockApp() {
-            sessionStorage.setItem('master_unlocked', 'true');
             document.getElementById('lockScreen').style.opacity = '0';
             setTimeout(() => {
                 document.getElementById('lockScreen').style.display = 'none';
@@ -638,12 +637,7 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            if (sessionStorage.getItem('master_unlocked') === 'true') {
-                document.getElementById('lockScreen').style.display = 'none';
-                document.getElementById('mainScreen').classList.remove('hidden');
-            } else {
-                checkBiometricSupport();
-            }
+            checkBiometricSupport();
         });
 
         // Claves DEBEN ser idénticas a cada app
