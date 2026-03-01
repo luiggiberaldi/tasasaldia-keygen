@@ -979,17 +979,25 @@
                 allDemos = demoData || [];
 
                 // Demo stats helpers
+                const isPermanent = (d) => allLicenses.some(l =>
+                    l.device_id === d.device_id &&
+                    l.product_id === d.product_id &&
+                    l.type === 'permanent'
+                );
+
                 const demosActivas = (pid) =>
                     allDemos.filter(d =>
                         d.product_id === pid &&
-                        new Date(d.expires_at) > new Date()
-                    ).length
+                        new Date(d.expires_at) > new Date() &&
+                        !isPermanent(d)
+                    ).length;
 
                 const demosExpiradas = (pid) =>
                     allDemos.filter(d =>
                         d.product_id === pid &&
-                        new Date(d.expires_at) <= new Date()
-                    ).length
+                        new Date(d.expires_at) <= new Date() &&
+                        !isPermanent(d)
+                    ).length;
 
                 // Update Stats
                 const tasasCount = allLicenses.filter(l => l.product_id === 'tasas').length
