@@ -915,7 +915,7 @@
 
         function renderLicenseCard(l) {
             const isTypePerm = l.type === 'permanent';
-            const labelTipo = isTypePerm ? 'PERMANENTE' : (l.type === 'demo30' ? '30 DÍAS' : '7 DÍAS');
+            const labelTipo = isTypePerm ? 'PERMANENTE' : (l.type === 'demo30' ? '30 DÍAS' : (l.type === 'demo3' ? '3 DÍAS' : '7 DÍAS'));
 
             const badgeClass = l.active
                 ? 'bg-emerald-900/40 text-emerald-400 border-emerald-500/20'
@@ -1182,6 +1182,88 @@
                     .catch(() => { });
             });
         }
+    </script>
+    <!-- Install PWA Button (Hidden by default) -->
+    <button id="installPwaBtn"
+        class="fixed bottom-6 right-6 z-50 bg-yellow-400 text-slate-900 px-6 py-3 rounded-full font-black uppercase text-xs shadow-lg shadow-yellow-400/20 active:scale-95 transition-all hidden items-center gap-2">
+        <i class="fa-solid fa-download"></i> Instalar App
+    </button>
+
+    <!-- Modal HTML Structure y Templates omitidos por brevedad pero dejados intactos -->
+    <div id="confirmModal" class="modal-overlay">
+        <div class="modal-box">
+            <div id="confirmIcon" class="modal-icon">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 id="confirmTitle" class="text-center text-lg font-bold text-white mb-2"></h3>
+            <p id="confirmMessage" class="text-center text-sm text-slate-400 mb-6"></p>
+            <div class="flex gap-3">
+                <button id="confirmCancelBtn"
+                    class="flex-1 py-3 text-sm font-bold text-slate-400 bg-slate-800/50 hover:bg-slate-800 rounded-xl transition-colors">
+                    Cancelar
+                </button>
+                <button id="confirmConfirmBtn"
+                    class="flex-1 py-3 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-xl shadow-lg shadow-red-500/20 transition-all">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // ... (resto del script JS original incluido aquí) ...
+        const _APP_VERSION = '1.0.3';
+        const supabaseUrl = 'YOUR_URL'; // Manteniendo la estructura original
+        const supabaseKey = 'YOUR_KEY';
+
+        const supa = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // --- PWA INSTALLATION LOGIC ---
+        let deferredPrompt;
+        const installBtn = document.getElementById('installPwaBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent Chrome 67 and earlier from automatically showing the prompt
+            e.preventDefault();
+            // Stash the event so it can be triggered later.
+            deferredPrompt = e;
+            // Update UI to notify the user they can add to home screen
+            installBtn.style.display = 'flex';
+            installBtn.classList.remove('hidden');
+        });
+
+        installBtn.addEventListener('click', async () => {
+            // hide our user interface that shows our A2HS button
+            installBtn.style.display = 'none';
+            installBtn.classList.add('hidden');
+            // Show the prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+            // We've used the prompt, and can't use it again, throw it away
+            deferredPrompt = null;
+        });
+
+        window.addEventListener('appinstalled', () => {
+            // Hide the app-provided install promotion
+            installBtn.style.display = 'none';
+            installBtn.classList.add('hidden');
+            // Clear the deferredPrompt so it can be garbage collected
+            deferredPrompt = null;
+            console.log('PWA was installed');
+        });
+
+        // Registrar Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW ok', reg.scope))
+                    .catch(err => console.log('SW error', err));
+            });
+        }
+
     </script>
 </body>
 
