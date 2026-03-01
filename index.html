@@ -682,17 +682,17 @@
 
             try {
                 // Get all licenses
-                const { data, error } = await db
+                const { data: licenseData, error } = await db
                     .from('licenses')
-                    .select('*, products(name, color, short_name)')
+                    .select('*, apps(name, color, short_name)')
                     .order('created_at', { ascending: false })
                     .limit(50)
 
                 if (error) throw error
 
                 // Update Stats
-                const tasasCount = data.filter(l => l.product_id === 'tasas').length
-                const bodegaCount = data.filter(l => l.product_id === 'bodega').length
+                const tasasCount = licenseData.filter(l => l.product_id === 'tasas').length
+                const bodegaCount = licenseData.filter(l => l.product_id === 'bodega').length
 
                 document.getElementById('stats_tasas').innerText = tasasCount
                 document.getElementById('stats_bodega').innerText = bodegaCount
