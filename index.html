@@ -64,49 +64,67 @@
             }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 
 <body class="min-h-screen flex items-center justify-center p-4">
 
     <!-- ════════════════════════════
-     PANTALLA 2 — GENERADOR
+     PANTALLA 2 — NAVEGADOR
 ════════════════════════════ -->
     <div id="mainScreen" class="w-full max-w-sm space-y-4 fade-in">
 
-        <!-- Selector de Producto -->
-        <div class="glass rounded-2xl p-4">
-            <p class="text-[10px] font-black text-slate-500 uppercase
-          tracking-widest mb-3">
-                Seleccionar Producto
-            </p>
-            <div class="grid grid-cols-2 gap-2">
-                <!-- TasasAlDía -->
-                <button onclick="selectProduct('tasas')" id="btn_tasas" class="product-btn flex flex-col items-center gap-2 p-3
-                rounded-xl border-2 transition-all active:scale-95
-                border-yellow-400 bg-yellow-400/10 text-yellow-400">
-                    <i class="fa-solid fa-chart-line text-lg"></i>
-                    <div class="text-center">
-                        <p class="text-[11px] font-black leading-tight">
-                            TasasAlDía
-                        </p>
-                        <p class="text-[9px] opacity-60 font-bold">TASAS-XXXX</p>
-                    </div>
-                </button>
-                <!-- PreciosAlDía -->
-                <button onclick="selectProduct('bodega')" id="btn_bodega" class="product-btn flex flex-col items-center gap-2 p-3
-                rounded-xl border-2 transition-all active:scale-95
-                border-slate-700 bg-slate-800/40 text-slate-400
-                hover:border-slate-500">
-                    <i class="fa-solid fa-store text-lg"></i>
-                    <div class="text-center">
-                        <p class="text-[11px] font-black leading-tight">
-                            PreciosAlDía
-                        </p>
-                        <p class="text-[9px] opacity-60 font-bold">PDA-XXXX</p>
-                    </div>
-                </button>
-            </div>
+        <!-- Tabs -->
+        <div class="glass flex rounded-xl p-1 relative z-10">
+            <button onclick="switchTab('gen')" id="tab_gen"
+                class="flex-1 py-2 text-xs font-black uppercase text-slate-900 bg-yellow-400 rounded-lg transition-all active:scale-95">
+                <i class="fa-solid fa-key mr-1"></i> Generar
+            </button>
+            <button onclick="switchTab('dash')" id="tab_dash"
+                class="flex-1 py-2 text-xs font-black uppercase text-slate-400 hover:text-white transition-all active:scale-95">
+                <i class="fa-solid fa-users mr-1"></i> Dashboard
+            </button>
         </div>
+
+        <!-- ════════════════════════════
+             TAB: GENERADOR
+        ════════════════════════════ -->
+        <div id="view_gen" class="space-y-4">
+
+            <!-- Selector de Producto -->
+            <div class="glass rounded-2xl p-4">
+                <p class="text-[10px] font-black text-slate-500 uppercase
+              tracking-widest mb-3">
+                    Seleccionar Producto
+                </p>
+                <div class="grid grid-cols-2 gap-2">
+                    <!-- TasasAlDía -->
+                    <button onclick="selectProduct('tasas')" id="btn_tasas" class="product-btn flex flex-col items-center gap-2 p-3
+                    rounded-xl border-2 transition-all active:scale-95
+                    border-yellow-400 bg-yellow-400/10 text-yellow-400">
+                        <i class="fa-solid fa-chart-line text-lg"></i>
+                        <div class="text-center">
+                            <p class="text-[11px] font-black leading-tight">
+                                TasasAlDía
+                            </p>
+                            <p class="text-[9px] opacity-60 font-bold">TASAS-XXXX</p>
+                        </div>
+                    </button>
+                    <!-- PreciosAlDía -->
+                    <button onclick="selectProduct('bodega')" id="btn_bodega" class="product-btn flex flex-col items-center gap-2 p-3
+                    rounded-xl border-2 transition-all active:scale-95
+                    border-slate-700 bg-slate-800/40 text-slate-400
+                    hover:border-slate-500">
+                        <i class="fa-solid fa-store text-lg"></i>
+                        <div class="text-center">
+                            <p class="text-[11px] font-black leading-tight">
+                                PreciosAlDía
+                            </p>
+                            <p class="text-[9px] opacity-60 font-bold">PDA-XXXX</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
 
         <!-- Formulario principal -->
         <div class="glass rounded-2xl p-5 space-y-4">
@@ -239,20 +257,60 @@
             </button>
         </div>
 
-        <!-- Log de sesión -->
-        <div id="logSection" class="hidden glass rounded-2xl p-4">
-            <div class="flex items-center justify-between mb-3">
-                <p class="text-[10px] font-black text-slate-500
-              uppercase tracking-widest flex items-center gap-1.5">
-                    <i class="fa-solid fa-clock-rotate-left"></i>
-                    Historial de sesión
-                </p>
-                <button onclick="clearLog()" class="text-[9px] text-slate-600 hover:text-rose-400
-                font-black uppercase transition-colors">
-                    Limpiar
-                </button>
+            <!-- Log de sesión -->
+            <div id="logSection" class="hidden glass rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-[10px] font-black text-slate-500
+                  uppercase tracking-widest flex items-center gap-1.5">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        Historial de sesión
+                    </p>
+                    <button onclick="clearLog()" class="text-[9px] text-slate-600 hover:text-rose-400
+                    font-black uppercase transition-colors">
+                        Limpiar
+                    </button>
+                </div>
+                <div id="logList" class="space-y-2 max-h-48 overflow-y-auto">
+                </div>
             </div>
-            <div id="logList" class="space-y-2 max-h-48 overflow-y-auto">
+        </div>
+
+        <!-- ════════════════════════════
+             TAB: DASHBOARD
+        ════════════════════════════ -->
+        <div id="view_dash" class="hidden space-y-4">
+            
+            <!-- Stats -->
+            <div class="grid grid-cols-2 gap-2">
+                <div class="glass rounded-xl p-3 flex flex-col items-center text-center">
+                    <i class="fa-solid fa-chart-line text-yellow-400 mb-1 text-lg"></i>
+                    <p class="text-[10px] text-slate-400 uppercase font-black uppercase">TasasAlDía</p>
+                    <p id="stats_tasas" class="text-lg font-black text-white">-</p>
+                </div>
+                <div class="glass rounded-xl p-3 flex flex-col items-center text-center">
+                    <i class="fa-solid fa-store text-emerald-400 mb-1 text-lg"></i>
+                    <p class="text-[10px] text-slate-400 uppercase font-black uppercase">PreciosAlDía</p>
+                    <p id="stats_bodega" class="text-lg font-black text-white">-</p>
+                </div>
+            </div>
+
+            <!-- Listado de licencias -->
+            <div class="glass rounded-2xl p-4 flex flex-col h-[500px]">
+                <div class="flex items-center justify-between mx-1 mb-4">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        Últimas Licencias
+                    </p>
+                    <button onclick="loadDashboard()" class="text-slate-400 hover:text-white transition-colors">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
+                </div>
+                
+                <div id="dashList" class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                    <div class="text-center py-10 text-slate-500">
+                        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i>
+                        <p class="text-xs">Cargando...</p>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -275,6 +333,10 @@
 
         const ADMIN_PIN = 'Lvbp1994**'     // Cambia esto a tu PIN secreto
         const ADMIN_WA = '584124051793'   // Tu WhatsApp
+        
+        const SUPABASE_URL = 'https://jjbzevntreoxpuofgkyi.supabase.co'
+        const SUPABASE_KEY = 'TU_ANON_KEY'  // anon key del proyecto
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
         // Claves DEBEN ser idénticas a cada app
         const PRODUCTS = {
@@ -453,6 +515,22 @@
 
                 addToLog(devId, code, currentType, expiresText, p.shortName)
 
+                // Guardar en Supabase
+                db.from('licenses').upsert({
+                    device_id:   devId,
+                    product_id:  currentProduct,
+                    type:        currentType,
+                    active:      true,
+                    expires_at:  expiresAt
+                        ? new Date(expiresAt).toISOString()
+                        : null,
+                    code: code,
+                }, { onConflict: 'device_id,product_id' })
+                .then(({ error }) => {
+                    if (!error) showToast('Licencia registrada en sistema ✓')
+                })
+                .catch(() => {})  // nunca bloquear si falla la red
+
             } catch (err) {
                 console.error(err)
                 showToast('Error generando código', 'error')
@@ -570,6 +648,136 @@
                 el.style.opacity = '0'
                 el.style.transform = 'translate(-50%, -12px)'
             }, 3000)
+        }
+
+        // ═══════════════════════════════════════════
+        // DASHBOARD Y TABS
+        // ═══════════════════════════════════════════
+        function switchTab(tabId) {
+            document.getElementById('view_gen').classList.add('hidden')
+            document.getElementById('view_dash').classList.add('hidden')
+            
+            document.getElementById('tab_gen').className = 'flex-1 py-2 text-xs font-black uppercase text-slate-400 hover:text-white transition-all active:scale-95'
+            document.getElementById('tab_dash').className = 'flex-1 py-2 text-xs font-black uppercase text-slate-400 hover:text-white transition-all active:scale-95'
+            
+            document.getElementById(`view_${tabId}`).classList.remove('hidden')
+            document.getElementById(`view_${tabId}`).classList.add('fade-in')
+            
+            const activeTab = document.getElementById(`tab_${tabId}`)
+            activeTab.className = 'flex-1 py-2 text-xs font-black uppercase text-slate-900 bg-yellow-400 rounded-lg transition-all active:scale-95'
+
+            if (tabId === 'dash') {
+                loadDashboard()
+            }
+        }
+
+        async function loadDashboard() {
+            const listEl = document.getElementById('dashList')
+            listEl.innerHTML = `
+                <div class="text-center py-10 text-slate-500">
+                    <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i>
+                    <p class="text-xs">Cargando...</p>
+                </div>
+            `
+
+            try {
+                // Get all licenses
+                const { data, error } = await db
+                    .from('licenses')
+                    .select('*, products(name, color, short_name)')
+                    .order('created_at', { ascending: false })
+                    .limit(50)
+
+                if (error) throw error
+
+                // Update Stats
+                const tasasCount = data.filter(l => l.product_id === 'tasas').length
+                const bodegaCount = data.filter(l => l.product_id === 'bodega').length
+
+                document.getElementById('stats_tasas').innerText = tasasCount
+                document.getElementById('stats_bodega').innerText = bodegaCount
+
+                // Render List
+                if (!data || data.length === 0) {
+                    listEl.innerHTML = `
+                        <div class="text-center py-10 text-slate-500">
+                            <i class="fa-solid fa-folder-open text-2xl mb-2 opacity-50"></i>
+                            <p class="text-xs">No hay licencias registradas</p>
+                        </div>
+                    `
+                    return
+                }
+
+                listEl.innerHTML = data.map(l => {
+                    const isTypePerm = l.type === 'permanent';
+                    const labelTipo = isTypePerm ? 'PERMANENTE' : (l.type === 'demo30' ? '30 DÍAS' : '7 DÍAS');
+                    
+                    const badgeClass = l.active 
+                        ? 'bg-emerald-900/40 text-emerald-400 border-emerald-500/20' 
+                        : 'bg-rose-900/40 text-rose-400 border-rose-500/20';
+                    const badgeIcon = l.active ? 'fa-check' : 'fa-xmark';
+                    const badgeText = l.active ? 'Activa' : 'Revocada';
+
+                    const prodColor = l.products?.color || '#94a3b8';
+                    const prodName = l.products?.short_name || l.product_id;
+
+                    return `
+                    <div class="bg-slate-900/40 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <div class="flex items-center gap-1.5 mb-1">
+                                    <h3 class="font-mono text-sm font-black text-white leading-none">${l.device_id}</h3>
+                                    <div class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ${badgeClass}">
+                                        <i class="fa-solid ${badgeIcon} mr-0.5"></i> ${badgeText}
+                                    </div>
+                                </div>
+                                <p class="text-[10px] font-bold uppercase" style="color: ${prodColor}">${prodName}</p>
+                            </div>
+                            ${l.active ? `
+                            <button onclick="revokeLicense('${l.id}')" class="shrink-0 text-[9px] font-black text-rose-400 bg-rose-400/10 hover:bg-rose-400 hover:text-white px-2 py-1 rounded transition-colors uppercase border border-rose-400/20">
+                                Revocar
+                            </button>
+                            ` : `
+                            <button disabled class="shrink-0 text-[9px] font-black text-slate-500 bg-slate-800 px-2 py-1 rounded uppercase border border-slate-700 cursor-not-allowed">
+                                Revocada
+                            </button>
+                            `}
+                        </div>
+                        
+                        <div class="flex items-center gap-3 text-[9px] text-slate-500 font-bold border-t border-slate-800/50 pt-2 mt-1">
+                            <span><i class="fa-solid fa-tag"></i> ${labelTipo}</span>
+                            <span><i class="fa-regular fa-calendar"></i> ${new Date(l.created_at).toLocaleDateString('es-VE')}</span>
+                        </div>
+                    </div>
+                `}).join('')
+
+            } catch (err) {
+                console.error(err)
+                listEl.innerHTML = `
+                    <div class="text-center py-10 text-rose-400">
+                        <i class="fa-solid fa-triangle-exclamation text-2xl mb-2"></i>
+                        <p class="text-xs">Error al cargar dashboard</p>
+                    </div>
+                `
+            }
+        }
+
+        async function revokeLicense(id) {
+            if(!confirm('¿Seguro que deseas revocar esta licencia? Se desactivará inmediatamente en el dispositivo del cliente la próxima vez que se conecte.')) return;
+            
+            try {
+                showToast('Revocando...', 'success')
+                const { error } = await db.from('licenses')
+                    .update({ active: false })
+                    .eq('id', id);
+                    
+                if (error) throw error;
+                showToast('Licencia revocada', 'success')
+                loadDashboard()
+            } catch (err) {
+                console.error(err);
+                showToast('Error al revocar', 'error')
+            }
         }
 
         // PWA
