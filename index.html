@@ -957,17 +957,7 @@
             `
 
             try {
-                // Get ALL licenses (no limit for full filtering)
-                const { data: licenseData, error } = await db
-                    .from('licenses')
-                    .select('*, apps(name, color, short_name)')
-                    .order('created_at', { ascending: false })
-
-                if (error) throw error
-
-                allLicenses = licenseData || [];
-
-                // Get demos
+                // 1. Get ALL demos first (needed for filtering)
                 const { data: demoData } = await db
                     .from('demos')
                     .select('device_id, product_id, expires_at, activated_at, app_version')
@@ -975,7 +965,25 @@
 
                 allDemos = demoData || [];
 
-                // Demo stats helpers
+                // 2. Get ALL licenses
+                const { data: licenseData, error } = await db
+                    .from('licenses')
+                    .select('*, apps(name, color, short_name)')
+                    .order('created_at', { ascending: false })
+
+                if (error) throw error
+
+                // 3. Filter allLicenses to REMOVE ghost demos
+                // A license is valid if it's 'permanent' OR if it's 'demo7' AND exists in allDemos
+                const activeLicenses = (licenseData || []).filter(l => {
+                    if (l.type === 'permanent') return true;
+                    // If it's a demo, it must exist in the demos table to be shown
+                    return allDemos.some(d => d.device_id === l.device_id && d.product_id === l.product_id);
+                });
+
+                allLicenses = activeLicenses;
+
+                // 4. Demo stats helpers
                 const isPermanent = (d) => allLicenses.some(l =>
                     l.device_id === d.device_id &&
                     l.product_id === d.product_id &&
@@ -996,7 +1004,7 @@
                         !isPermanent(d)
                     ).length;
 
-                // Update Stats
+                // Update Stats based on the filtered active licenses
                 const tasasCount = allLicenses.filter(l => l.product_id === 'tasas').length
                 const bodegaCount = allLicenses.filter(l => l.product_id === 'bodega').length
 
