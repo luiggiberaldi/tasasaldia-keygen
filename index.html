@@ -118,6 +118,28 @@
             font-size: 1.25rem;
             color: #f87171;
         }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-6px);
+            }
+
+            40%,
+            80% {
+                transform: translateX(6px);
+            }
+        }
+
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
@@ -125,9 +147,65 @@
 <body class="min-h-screen flex items-center justify-center p-4">
 
     <!-- ════════════════════════════
+         PANTALLA 1 — LOCK SCREEN
+    ════════════════════════════ -->
+    <div id="lockScreen"
+        class="w-full max-w-sm space-y-6 flex flex-col items-center justify-center fade-in absolute inset-0 bg-[#020617] z-50 p-4 transition-opacity duration-300">
+        <div class="text-center space-y-2 mb-4">
+            <div
+                class="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto shadow-2xl shadow-yellow-400/10 text-yellow-500 mb-6">
+                <i class="fa-solid fa-shield-halved text-3xl"></i>
+            </div>
+            <h1 class="text-xl font-black text-white tracking-tight">Estación Maestra</h1>
+            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Acceso Restringido</p>
+        </div>
+
+        <div id="pinDots" class="flex gap-3 mb-4">
+            <div class="w-4 h-4 rounded-full bg-slate-800 border border-slate-700 transition-all pin-dot"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-800 border border-slate-700 transition-all pin-dot"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-800 border border-slate-700 transition-all pin-dot"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-800 border border-slate-700 transition-all pin-dot"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-800 border border-slate-700 transition-all pin-dot"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-800 border border-slate-700 transition-all pin-dot"></div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3 w-full max-w-[280px]">
+            <button onclick="enterPin(1)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">1</button>
+            <button onclick="enterPin(2)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">2</button>
+            <button onclick="enterPin(3)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">3</button>
+            <button onclick="enterPin(4)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">4</button>
+            <button onclick="enterPin(5)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">5</button>
+            <button onclick="enterPin(6)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">6</button>
+            <button onclick="enterPin(7)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">7</button>
+            <button onclick="enterPin(8)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">8</button>
+            <button onclick="enterPin(9)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">9</button>
+            <button onclick="tryBiometrics()" id="bioBtn" style="display: none;"
+                class="h-16 rounded-2xl bg-transparent text-slate-500 hover:text-emerald-400 active:scale-95 transition-all text-2xl"><i
+                    class="fa-solid fa-fingerprint"></i></button>
+            <div id="bioPlaceholder" class="h-16"></div>
+            <button onclick="enterPin(0)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">0</button>
+            <button onclick="deletePin()"
+                class="h-16 rounded-2xl bg-transparent text-slate-500 hover:text-rose-400 active:scale-95 transition-all text-2xl"><i
+                    class="fa-solid fa-delete-left"></i></button>
+        </div>
+
+        <p id="lockError" class="text-xs font-bold text-rose-500 h-4 opacity-0 transition-opacity">PIN Incorrecto</p>
+    </div>
+
+    <!-- ════════════════════════════
      PANTALLA 2 — NAVEGADOR
 ════════════════════════════ -->
-    <div id="mainScreen" class="w-full max-w-sm space-y-4 fade-in">
+    <div id="mainScreen" class="w-full max-w-sm space-y-4 fade-in hidden">
 
         <!-- Tabs -->
         <div class="glass flex rounded-xl p-1 relative z-10">
@@ -448,6 +526,125 @@
         const SUPABASE_URL = 'https://jjbzevntreoxpuofgkyi.supabase.co'
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqYnpldm50cmVveHB1b2Zna3lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NjE4MDIsImV4cCI6MjA4NzAzNzgwMn0.wyyISEMsTEl__QgeckSVWgX1isif8iZOblO8GNso-TQ'  // anon key del proyecto
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+        // ═══════════════════════════════════════════
+        // AUTENTICACIÓN (PIN / BIOMETRÍA)
+        // ═══════════════════════════════════════════
+        const PIN_HASH = '61b9237617f079e2241b2ffddec6a3bf5dd1b767ab8beab10d32050f651f0d1d';
+        let currentPin = '';
+
+        async function hashPin(pin) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(pin);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function updatePinDots() {
+            const dots = document.querySelectorAll('.pin-dot');
+            dots.forEach((dot, index) => {
+                if (index < currentPin.length) {
+                    dot.classList.remove('bg-slate-800', 'border-slate-700');
+                    dot.classList.add('bg-yellow-400', 'border-yellow-400', 'shadow-[0_0_10px_rgba(250,204,21,0.5)]');
+                } else {
+                    dot.classList.add('bg-slate-800', 'border-slate-700');
+                    dot.classList.remove('bg-yellow-400', 'border-yellow-400', 'shadow-[0_0_10px_rgba(250,204,21,0.5)]');
+                }
+            });
+        }
+
+        async function enterPin(num) {
+            if (currentPin.length >= 6) return;
+            currentPin += num;
+            updatePinDots();
+
+            document.getElementById('lockError').style.opacity = '0';
+
+            if (currentPin.length === 6) {
+                const hashed = await hashPin(currentPin);
+                if (hashed === PIN_HASH) {
+                    unlockApp();
+                } else {
+                    document.getElementById('pinDots').classList.add('shake');
+                    document.getElementById('lockError').style.opacity = '1';
+                    setTimeout(() => {
+                        document.getElementById('pinDots').classList.remove('shake');
+                        currentPin = '';
+                        updatePinDots();
+                    }, 400);
+                }
+            }
+        }
+
+        function deletePin() {
+            if (currentPin.length > 0) {
+                currentPin = currentPin.slice(0, -1);
+                updatePinDots();
+                document.getElementById('lockError').style.opacity = '0';
+            }
+        }
+
+        function unlockApp() {
+            sessionStorage.setItem('master_unlocked', 'true');
+            document.getElementById('lockScreen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('lockScreen').style.display = 'none';
+                document.getElementById('mainScreen').classList.remove('hidden');
+
+                const urlParams = new URLSearchParams(window.location.search);
+                const deepTab = urlParams.get('tab');
+                if (deepTab) {
+                    try { switchTab(deepTab); } catch (e) { }
+                }
+            }, 300);
+        }
+
+        async function checkBiometricSupport() {
+            if (window.PublicKeyCredential &&
+                await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()) {
+                document.getElementById('bioBtn').style.display = 'block';
+                document.getElementById('bioPlaceholder').style.display = 'none';
+                tryBiometrics();
+            }
+        }
+
+        async function tryBiometrics() {
+            try {
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+
+                await navigator.credentials.create({
+                    publicKey: {
+                        challenge: challenge,
+                        rp: { name: "Estación Maestra", id: window.location.hostname || "localhost" },
+                        user: {
+                            id: new Uint8Array(16),
+                            name: "admin",
+                            displayName: "Administrador"
+                        },
+                        pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+                        authenticatorSelection: {
+                            authenticatorAttachment: "platform",
+                            userVerification: "required"
+                        },
+                        timeout: 60000
+                    }
+                });
+                unlockApp();
+            } catch (err) {
+                console.log("Biometría omitida o fallida:", err);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('master_unlocked') === 'true') {
+                document.getElementById('lockScreen').style.display = 'none';
+                document.getElementById('mainScreen').classList.remove('hidden');
+            } else {
+                checkBiometricSupport();
+            }
+        });
 
         // Claves DEBEN ser idénticas a cada app
         const PRODUCTS = {
@@ -784,17 +981,6 @@
 
             if (tabId === 'dash') {
                 loadDashboard()
-            }
-        }
-
-        // Leer tab de la URL para abrir la vista correcta (shortcuts PWA)
-        const urlParams = new URLSearchParams(window.location.search);
-        const deepTab = urlParams.get('tab');
-        if (deepTab) {
-            try {
-                switchTab(deepTab);
-            } catch (e) {
-                // Si aún no se puede (por el PIN), se maneja después
             }
         }
 
