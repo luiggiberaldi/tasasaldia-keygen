@@ -239,7 +239,8 @@
                         <i class="fa-solid fa-fingerprint absolute left-3.5
                   top-1/2 -translate-y-1/2 text-slate-500
                   pointer-events-none text-sm"></i>
-                        <input type="text" id="devId" placeholder="TASAS-XXXX o PDA-XXXX" class="w-full bg-slate-900/60 border border-slate-700/50
+                        <input type="text" id="devId" placeholder="TASAS-XXXX o PDA-XXXX"
+                            oninput="handleDeviceIdInput(this.value)" class="w-full bg-slate-900/60 border border-slate-700/50
                     text-white rounded-xl py-3.5 pl-10 pr-4
                     focus:outline-none focus:border-yellow-400
                     focus:ring-1 focus:ring-yellow-400/30 transition-all
@@ -339,31 +340,96 @@
             <div class="grid grid-cols-2 gap-2">
                 <div class="glass rounded-xl p-3 flex flex-col items-center text-center">
                     <i class="fa-solid fa-chart-line text-yellow-400 mb-1 text-lg"></i>
-                    <p class="text-[10px] text-slate-400 uppercase font-black uppercase">TasasAlDía</p>
+                    <p class="text-[10px] text-slate-400 uppercase font-black">TasasAlDía</p>
                     <p id="stats_tasas" class="text-lg font-black text-white">-</p>
                 </div>
                 <div class="glass rounded-xl p-3 flex flex-col items-center text-center">
                     <i class="fa-solid fa-store text-emerald-400 mb-1 text-lg"></i>
-                    <p class="text-[10px] text-slate-400 uppercase font-black uppercase">PreciosAlDía</p>
+                    <p class="text-[10px] text-slate-400 uppercase font-black">PreciosAlDía</p>
                     <p id="stats_bodega" class="text-lg font-black text-white">-</p>
                 </div>
             </div>
 
-            <!-- Listado de licencias -->
-            <div class="glass rounded-2xl p-4 flex flex-col h-[500px]">
-                <div class="flex items-center justify-between mx-1 mb-4">
+            <!-- Licencias Panel -->
+            <div class="glass rounded-2xl p-4 flex flex-col">
+                <!-- Header + Search -->
+                <div class="flex items-center justify-between mb-3">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        Últimas Licencias
+                        Gestión de Licencias
                     </p>
                     <button onclick="loadDashboard()" class="text-slate-400 hover:text-white transition-colors">
                         <i class="fa-solid fa-arrows-rotate"></i>
                     </button>
                 </div>
 
-                <div id="dashList" class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                <!-- Search Bar -->
+                <div class="relative mb-3">
+                    <i
+                        class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                    <input id="dashSearch" type="text" placeholder="Buscar por ID de dispositivo..."
+                        oninput="applyDashFilters()"
+                        class="w-full pl-9 pr-3 py-2.5 bg-slate-900/60 border border-slate-700/50 rounded-xl text-xs text-white placeholder-slate-500 font-bold focus:border-emerald-500/50 focus:outline-none transition-colors" />
+                </div>
+
+                <!-- Filter Chips -->
+                <div class="flex flex-wrap gap-1.5 mb-3">
+                    <!-- Estado -->
+                    <button onclick="toggleFilter(this, 'status', 'active')" data-active="false"
+                        class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-emerald-500/50">
+                        <i class="fa-solid fa-check mr-0.5"></i> Activa
+                    </button>
+                    <button onclick="toggleFilter(this, 'status', 'revoked')" data-active="false"
+                        class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-rose-500/50">
+                        <i class="fa-solid fa-xmark mr-0.5"></i> Revocada
+                    </button>
+                    <span class="w-px h-5 bg-slate-700/50 self-center mx-0.5"></span>
+                    <!-- Producto -->
+                    <button onclick="toggleFilter(this, 'product', 'tasas')" data-active="false"
+                        class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-yellow-500/50">
+                        <i class="fa-solid fa-chart-line mr-0.5"></i> Tasas
+                    </button>
+                    <button onclick="toggleFilter(this, 'product', 'bodega')" data-active="false"
+                        class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-emerald-500/50">
+                        <i class="fa-solid fa-store mr-0.5"></i> Precios
+                    </button>
+                    <span class="w-px h-5 bg-slate-700/50 self-center mx-0.5"></span>
+                    <!-- Tipo -->
+                    <button onclick="toggleFilter(this, 'type', 'permanent')" data-active="false"
+                        class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-sky-500/50">
+                        ∞ Perm
+                    </button>
+                    <button onclick="toggleFilter(this, 'type', 'demo7')" data-active="false"
+                        class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-amber-500/50">
+                        7d
+                    </button>
+                    <button onclick="toggleFilter(this, 'type', 'demo30')" data-active="false"
+                        class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-amber-500/50">
+                        30d
+                    </button>
+                </div>
+
+                <!-- License List -->
+                <div id="dashList" class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar max-h-[400px]">
                     <div class="text-center py-10 text-slate-500">
                         <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i>
                         <p class="text-xs">Cargando...</p>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div id="dashPagination"
+                    class="flex items-center justify-between mt-3 pt-3 border-t border-slate-800/50">
+                    <p id="dashCount" class="text-[9px] font-bold text-slate-500">0 resultados</p>
+                    <div class="flex items-center gap-1">
+                        <button onclick="dashChangePage(-1)" id="dashPrevBtn" disabled
+                            class="text-[9px] font-black text-slate-400 bg-slate-800/50 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed px-2 py-1 rounded transition-colors">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <span id="dashPageInfo" class="text-[9px] font-bold text-slate-500 px-2">1/1</span>
+                        <button onclick="dashChangePage(1)" id="dashNextBtn" disabled
+                            class="text-[9px] font-black text-slate-400 bg-slate-800/50 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed px-2 py-1 rounded transition-colors">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -400,7 +466,7 @@
                 shortName: 'TasasAlDía',
                 icon: 'fa-chart-line',
                 color: '#fcd535',
-                salt: 'VENEZUELAPRO2026GLOBAL',  // = MASTER_SECRET_KEY en useSecurity.js de TasasAlDía
+                salt: 'VENEZUELA_PRO_2026_GLOBAL',  // = MASTER_SECRET_KEY en useSecurity.js de TasasAlDía
                 idPrefix: 'TASAS',
                 tokenKey: 'premium_token',           // = localStorage key en TasasAlDía
             },
@@ -498,6 +564,18 @@
             }
 
             document.getElementById('resultContainer').classList.add('hidden')
+        }
+
+        // ═══════════════════════════════════════════
+        // AUTODETECT PRODUCT FROM DEVICE ID PREFIX
+        // ═══════════════════════════════════════════
+        function handleDeviceIdInput(val) {
+            const v = val.trim().toUpperCase()
+            if (v.startsWith('TAS') && currentProduct !== 'tasas') {
+                selectProduct('tasas')
+            } else if (v.startsWith('PDA') && currentProduct !== 'bodega') {
+                selectProduct('bodega')
+            }
         }
 
         // ═══════════════════════════════════════════
@@ -737,6 +815,158 @@
             }
         }
 
+        // ═══════════════════════════════════
+        // DASHBOARD — Filter / Search / Pagination State
+        // ═══════════════════════════════════
+        let allLicenses = [];
+        let allDemos = [];
+        let dashFilters = { status: [], product: [], type: [] };
+        let dashCurrentPage = 1;
+        const DASH_PAGE_SIZE = 10;
+
+        function toggleFilter(btn, category, value) {
+            const isActive = btn.dataset.active === 'true';
+            btn.dataset.active = isActive ? 'false' : 'true';
+
+            if (isActive) {
+                btn.classList.remove('bg-emerald-900/40', 'text-emerald-400', 'border-emerald-500/30',
+                    'bg-rose-900/40', 'text-rose-400', 'border-rose-500/30',
+                    'bg-yellow-900/40', 'text-yellow-400', 'border-yellow-500/30',
+                    'bg-sky-900/40', 'text-sky-400', 'border-sky-500/30',
+                    'bg-amber-900/40', 'text-amber-400', 'border-amber-500/30');
+                btn.classList.add('bg-slate-800/50', 'text-slate-500', 'border-slate-700/40');
+                dashFilters[category] = dashFilters[category].filter(v => v !== value);
+            } else {
+                btn.classList.remove('bg-slate-800/50', 'text-slate-500', 'border-slate-700/40');
+                const colorMap = {
+                    'status-active': ['bg-emerald-900/40', 'text-emerald-400', 'border-emerald-500/30'],
+                    'status-revoked': ['bg-rose-900/40', 'text-rose-400', 'border-rose-500/30'],
+                    'product-tasas': ['bg-yellow-900/40', 'text-yellow-400', 'border-yellow-500/30'],
+                    'product-bodega': ['bg-emerald-900/40', 'text-emerald-400', 'border-emerald-500/30'],
+                    'type-permanent': ['bg-sky-900/40', 'text-sky-400', 'border-sky-500/30'],
+                    'type-demo7': ['bg-amber-900/40', 'text-amber-400', 'border-amber-500/30'],
+                    'type-demo30': ['bg-amber-900/40', 'text-amber-400', 'border-amber-500/30'],
+                };
+                const classes = colorMap[`${category}-${value}`] || ['bg-slate-600', 'text-white', 'border-slate-500'];
+                btn.classList.add(...classes);
+                dashFilters[category].push(value);
+            }
+
+            dashCurrentPage = 1;
+            applyDashFilters();
+        }
+
+        function applyDashFilters() {
+            const searchTerm = (document.getElementById('dashSearch')?.value || '').trim().toUpperCase();
+            let filtered = [...allLicenses];
+
+            // Search
+            if (searchTerm) {
+                filtered = filtered.filter(l => l.device_id.toUpperCase().includes(searchTerm));
+            }
+
+            // Status filter
+            if (dashFilters.status.length > 0) {
+                filtered = filtered.filter(l => {
+                    if (dashFilters.status.includes('active') && l.active) return true;
+                    if (dashFilters.status.includes('revoked') && !l.active) return true;
+                    return false;
+                });
+            }
+
+            // Product filter
+            if (dashFilters.product.length > 0) {
+                filtered = filtered.filter(l => dashFilters.product.includes(l.product_id));
+            }
+
+            // Type filter
+            if (dashFilters.type.length > 0) {
+                filtered = filtered.filter(l => dashFilters.type.includes(l.type));
+            }
+
+            renderFilteredLicenses(filtered);
+        }
+
+        function renderFilteredLicenses(filtered) {
+            const listEl = document.getElementById('dashList');
+            const totalPages = Math.max(1, Math.ceil(filtered.length / DASH_PAGE_SIZE));
+            if (dashCurrentPage > totalPages) dashCurrentPage = totalPages;
+
+            const start = (dashCurrentPage - 1) * DASH_PAGE_SIZE;
+            const pageItems = filtered.slice(start, start + DASH_PAGE_SIZE);
+
+            // Count
+            document.getElementById('dashCount').textContent = `${filtered.length} resultado${filtered.length !== 1 ? 's' : ''}`;
+            document.getElementById('dashPageInfo').textContent = `${dashCurrentPage}/${totalPages}`;
+            document.getElementById('dashPrevBtn').disabled = dashCurrentPage <= 1;
+            document.getElementById('dashNextBtn').disabled = dashCurrentPage >= totalPages;
+
+            if (pageItems.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-10 text-slate-500">
+                        <i class="fa-solid fa-filter-circle-xmark text-2xl mb-2 opacity-50"></i>
+                        <p class="text-xs">Sin resultados con estos filtros</p>
+                    </div>`;
+                return;
+            }
+
+            listEl.innerHTML = pageItems.map(l => renderLicenseCard(l)).join('');
+        }
+
+        function renderLicenseCard(l) {
+            const isTypePerm = l.type === 'permanent';
+            const labelTipo = isTypePerm ? 'PERMANENTE' : (l.type === 'demo30' ? '30 DÍAS' : '7 DÍAS');
+
+            const badgeClass = l.active
+                ? 'bg-emerald-900/40 text-emerald-400 border-emerald-500/20'
+                : 'bg-rose-900/40 text-rose-400 border-rose-500/20';
+            const badgeIcon = l.active ? 'fa-check' : 'fa-xmark';
+            const badgeText = l.active ? 'Activa' : 'Revocada';
+
+            const prodColor = l.apps?.color || '#94a3b8';
+            const prodName = l.apps?.short_name || l.product_id;
+
+            const actionBtns = l.active ? `
+                <button onclick="revokeLicense('${l.id}')" class="shrink-0 text-[9px] font-black text-rose-400 bg-rose-400/10 hover:bg-rose-400 hover:text-white px-2 py-1 rounded transition-colors uppercase border border-rose-400/20">
+                    Revocar
+                </button>
+            ` : `
+                <div class="flex gap-1">
+                    <button onclick="reactivateLicense('${l.id}')" class="shrink-0 text-[9px] font-black text-emerald-400 bg-emerald-400/10 hover:bg-emerald-400 hover:text-white px-2 py-1 rounded transition-colors uppercase border border-emerald-400/20">
+                        Reactivar
+                    </button>
+                    <button onclick="deleteLicense('${l.id}', '${l.device_id}')" class="shrink-0 text-[9px] font-black text-rose-400 bg-rose-400/10 hover:bg-rose-400 hover:text-white px-2 py-1 rounded transition-colors uppercase border border-rose-400/20">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            `;
+
+            return `
+            <div class="bg-slate-900/40 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5 mb-1">
+                            <h3 class="font-mono text-sm font-black text-white leading-none">${l.device_id}</h3>
+                            <div class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ${badgeClass}">
+                                <i class="fa-solid ${badgeIcon} mr-0.5"></i> ${badgeText}
+                            </div>
+                        </div>
+                        <p class="text-[10px] font-bold uppercase" style="color: ${prodColor}">${prodName}</p>
+                    </div>
+                    ${actionBtns}
+                </div>
+                <div class="flex items-center gap-3 text-[9px] text-slate-500 font-bold border-t border-slate-800/50 pt-2 mt-1">
+                    <span><i class="fa-solid fa-tag"></i> ${labelTipo}</span>
+                    <span><i class="fa-regular fa-calendar"></i> ${new Date(l.created_at).toLocaleDateString('es-VE')}</span>
+                </div>
+            </div>`;
+        }
+
+        function dashChangePage(delta) {
+            dashCurrentPage += delta;
+            applyDashFilters();
+        }
+
         async function loadDashboard() {
             const listEl = document.getElementById('dashList')
             listEl.innerHTML = `
@@ -747,14 +977,15 @@
             `
 
             try {
-                // Get all licenses
+                // Get ALL licenses (no limit for full filtering)
                 const { data: licenseData, error } = await db
                     .from('licenses')
                     .select('*, apps(name, color, short_name)')
                     .order('created_at', { ascending: false })
-                    .limit(50)
 
                 if (error) throw error
+
+                allLicenses = licenseData || [];
 
                 // Get demos
                 const { data: demoData } = await db
@@ -762,22 +993,24 @@
                     .select('device_id, product_id, expires_at, activated_at, app_version')
                     .order('activated_at', { ascending: false })
 
+                allDemos = demoData || [];
+
                 // Demo stats helpers
                 const demosActivas = (pid) =>
-                    (demoData || []).filter(d =>
+                    allDemos.filter(d =>
                         d.product_id === pid &&
                         new Date(d.expires_at) > new Date()
                     ).length
 
                 const demosExpiradas = (pid) =>
-                    (demoData || []).filter(d =>
+                    allDemos.filter(d =>
                         d.product_id === pid &&
                         new Date(d.expires_at) <= new Date()
                     ).length
 
-                // Update Stats — licenses + demos
-                const tasasCount = licenseData.filter(l => l.product_id === 'tasas').length
-                const bodegaCount = licenseData.filter(l => l.product_id === 'bodega').length
+                // Update Stats
+                const tasasCount = allLicenses.filter(l => l.product_id === 'tasas').length
+                const bodegaCount = allLicenses.filter(l => l.product_id === 'bodega').length
 
                 document.getElementById('stats_tasas').innerHTML = `
                     <span class="text-lg font-black text-white">${tasasCount}</span>
@@ -797,99 +1030,8 @@
                         ${demosExpiradas('bodega')} expiradas
                     </span>`
 
-                // Render Licenses List
-                let licensesHTML = ''
-                if (!licenseData || licenseData.length === 0) {
-                    licensesHTML = `
-                        <div class="text-center py-10 text-slate-500">
-                            <i class="fa-solid fa-folder-open text-2xl mb-2 opacity-50"></i>
-                            <p class="text-xs">No hay licencias registradas</p>
-                        </div>
-                    `
-                } else {
-                    licensesHTML = licenseData.map(l => {
-                        const isTypePerm = l.type === 'permanent';
-                        const labelTipo = isTypePerm ? 'PERMANENTE' : (l.type === 'demo30' ? '30 DÍAS' : '7 DÍAS');
-
-                        const badgeClass = l.active
-                            ? 'bg-emerald-900/40 text-emerald-400 border-emerald-500/20'
-                            : 'bg-rose-900/40 text-rose-400 border-rose-500/20';
-                        const badgeIcon = l.active ? 'fa-check' : 'fa-xmark';
-                        const badgeText = l.active ? 'Activa' : 'Revocada';
-
-                        const prodColor = l.apps?.color || '#94a3b8';
-                        const prodName = l.apps?.short_name || l.product_id;
-
-                        return `
-                        <div class="bg-slate-900/40 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
-                            <div class="flex items-start justify-between">
-                                <div>
-                                    <div class="flex items-center gap-1.5 mb-1">
-                                        <h3 class="font-mono text-sm font-black text-white leading-none">${l.device_id}</h3>
-                                        <div class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ${badgeClass}">
-                                            <i class="fa-solid ${badgeIcon} mr-0.5"></i> ${badgeText}
-                                        </div>
-                                    </div>
-                                    <p class="text-[10px] font-bold uppercase" style="color: ${prodColor}">${prodName}</p>
-                                </div>
-                                ${l.active ? `
-                                <button onclick="revokeLicense('${l.id}')" class="shrink-0 text-[9px] font-black text-rose-400 bg-rose-400/10 hover:bg-rose-400 hover:text-white px-2 py-1 rounded transition-colors uppercase border border-rose-400/20">
-                                    Revocar
-                                </button>
-                                ` : `
-                                <button disabled class="shrink-0 text-[9px] font-black text-slate-500 bg-slate-800 px-2 py-1 rounded uppercase border border-slate-700 cursor-not-allowed">
-                                    Revocada
-                                </button>
-                                `}
-                            </div>
-                            
-                            <div class="flex items-center gap-3 text-[9px] text-slate-500 font-bold border-t border-slate-800/50 pt-2 mt-1">
-                                <span><i class="fa-solid fa-tag"></i> ${labelTipo}</span>
-                                <span><i class="fa-regular fa-calendar"></i> ${new Date(l.created_at).toLocaleDateString('es-VE')}</span>
-                            </div>
-                        </div>
-                    `}).join('')
-                }
-
-                // Render Demos Section
-                let demosHTML = ''
-                if (demoData && demoData.length > 0) {
-                    demosHTML = `
-                        <div class="mt-4 pt-3 border-t border-slate-800/50">
-                            <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">
-                                <i class="fa-solid fa-flask mr-1"></i> Demos Recientes
-                            </p>
-                            <div class="space-y-2">
-                    ` + demoData.slice(0, 10).map(d => {
-                        const activa = new Date(d.expires_at) > new Date()
-                        const prod = PRODUCTS[d.product_id]
-                        const diasRestantes = Math.ceil(
-                            (new Date(d.expires_at) - new Date()) / 86400000
-                        )
-                        return `
-                            <div class="bg-slate-900/40 border border-slate-800 rounded-xl p-3 flex items-center justify-between gap-2">
-                                <div class="min-w-0">
-                                    <p class="font-mono text-xs font-black text-slate-300 truncate">${d.device_id}</p>
-                                    <p class="text-[9px] font-bold mt-0.5" style="color:${prod?.color || '#94a3b8'}">
-                                        ${prod?.shortName || d.product_id}
-                                        · Activado ${new Date(d.activated_at).toLocaleDateString('es-VE')}
-                                    </p>
-                                </div>
-                                <span class="shrink-0 text-[9px] font-black uppercase px-2 py-1 rounded-lg border
-                                    ${activa
-                                ? 'bg-amber-900/30 text-amber-400 border-amber-500/20'
-                                : 'bg-slate-800 text-slate-500 border-slate-700'}">
-                                    ${activa
-                                ? (diasRestantes > 0 ? diasRestantes + 'd' : 'hoy')
-                                : 'exp'}
-                                </span>
-                            </div>`
-                    }).join('') + `
-                            </div>
-                        </div>`
-                }
-
-                listEl.innerHTML = licensesHTML + demosHTML
+                // Apply current filters
+                applyDashFilters();
 
             } catch (err) {
                 console.error(err)
@@ -905,7 +1047,7 @@
         async function revokeLicense(id) {
             const confirmed = await showConfirmModal(
                 'Revocar Licencia',
-                'Esta acción desactivará permanentemente la licencia del dispositivo asociado. El cliente perderá acceso en su próxima verificación.',
+                'Esta acción desactivará la licencia del dispositivo asociado. El cliente perderá acceso en su próxima verificación.',
                 'Confirmar Revocación',
                 'Cancelar'
             )
@@ -923,6 +1065,63 @@
             } catch (err) {
                 console.error(err);
                 showToast('Error al procesar la revocación', 'error')
+            }
+        }
+
+        async function reactivateLicense(id) {
+            const confirmed = await showConfirmModal(
+                'Reactivar Licencia',
+                '¿Deseas reactivar esta licencia? El cliente podrá usar la app de nuevo.',
+                'Reactivar',
+                'Cancelar'
+            )
+            if (!confirmed) return;
+
+            try {
+                showToast('Reactivando...', 'success')
+                const { error } = await db.from('licenses')
+                    .update({ active: true })
+                    .eq('id', id);
+
+                if (error) throw error;
+                showToast('Licencia reactivada ✓', 'success')
+                loadDashboard()
+            } catch (err) {
+                console.error(err);
+                showToast('Error al reactivar', 'error')
+            }
+        }
+
+        async function deleteLicense(id, deviceId) {
+            // DOBLE CONFIRMACIÓN
+            const first = await showConfirmModal(
+                'Eliminar Licencia',
+                `¿Estás seguro de eliminar permanentemente la licencia de <b>${deviceId}</b>? Esta acción NO se puede deshacer.`,
+                'Sí, eliminar',
+                'Cancelar'
+            )
+            if (!first) return;
+
+            const second = await showConfirmModal(
+                '⚠️ Confirmación Final',
+                `Escribimos de nuevo: se eliminará <b>${deviceId}</b> de la base de datos para siempre. ¿Confirmas?`,
+                'Eliminar definitivamente',
+                'No, cancelar'
+            )
+            if (!second) return;
+
+            try {
+                showToast('Eliminando...', 'success')
+                const { error } = await db.from('licenses')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                showToast('Licencia eliminada permanentemente', 'success')
+                loadDashboard()
+            } catch (err) {
+                console.error(err);
+                showToast('Error al eliminar', 'error')
             }
         }
 
