@@ -634,21 +634,10 @@
 
                 addToLog(devId, code, currentType, expiresText, p.shortName)
 
-                // Guardar en Supabase
-                db.from('licenses').upsert({
-                    device_id: devId,
-                    product_id: currentProduct,
-                    type: currentType,
-                    active: true,
-                    expires_at: expiresAt
-                        ? new Date(expiresAt).toISOString()
-                        : null,
-                    code: code,
-                }, { onConflict: 'device_id,product_id' })
-                    .then(({ error }) => {
-                        if (!error) showToast('Licencia registrada en sistema ✓')
-                    })
-                    .catch(() => { })  // nunca bloquear si falla la red
+                // NOTA: A petición del usuario, la licencia YA NO se registra
+                // automáticamente en Supabase al generarla. Se registrará
+                // cuando el usuario la active realmente en su dispositivo.
+                showToast('Código generado exitosamente ✓')
 
             } catch (err) {
                 console.error(err)
