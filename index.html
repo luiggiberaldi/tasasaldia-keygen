@@ -7,10 +7,11 @@
       initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#fcd535">
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon.svg">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="VIP KeyGen">
+    <meta name="apple-mobile-web-app-title" content="Admin Panel">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Master Key Gen · Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -725,6 +726,17 @@
             }
         }
 
+        // Leer tab de la URL para abrir la vista correcta (shortcuts PWA)
+        const urlParams = new URLSearchParams(window.location.search);
+        const deepTab = urlParams.get('tab');
+        if (deepTab) {
+            try {
+                switchTab(deepTab);
+            } catch (e) {
+                // Si aún no se puede (por el PIN), se maneja después
+            }
+        }
+
         async function loadDashboard() {
             const listEl = document.getElementById('dashList')
             listEl.innerHTML = `
@@ -962,6 +974,14 @@
                     if (e.target === overlay) close(false)
                 })
             })
+        }
+
+        // PWA — registrar Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .catch(() => { });
+            });
         }
     </script>
 </body>
