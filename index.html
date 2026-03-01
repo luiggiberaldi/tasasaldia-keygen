@@ -698,7 +698,7 @@
                 document.getElementById('stats_bodega').innerText = bodegaCount
 
                 // Render List
-                if (!data || data.length === 0) {
+                if (!licenseData || licenseData.length === 0) {
                     listEl.innerHTML = `
                         <div class="text-center py-10 text-slate-500">
                             <i class="fa-solid fa-folder-open text-2xl mb-2 opacity-50"></i>
@@ -708,7 +708,7 @@
                     return
                 }
 
-                listEl.innerHTML = data.map(l => {
+                listEl.innerHTML = licenseData.map(l => {
                     const isTypePerm = l.type === 'permanent';
                     const labelTipo = isTypePerm ? 'PERMANENTE' : (l.type === 'demo30' ? '30 DÍAS' : '7 DÍAS');
 
@@ -718,8 +718,8 @@
                     const badgeIcon = l.active ? 'fa-check' : 'fa-xmark';
                     const badgeText = l.active ? 'Activa' : 'Revocada';
 
-                    const prodColor = l.products?.color || '#94a3b8';
-                    const prodName = l.products?.short_name || l.product_id;
+                    const prodColor = l.apps?.color || '#94a3b8';
+                    const prodName = l.apps?.short_name || l.product_id;
 
                     return `
                     <div class="bg-slate-900/40 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
