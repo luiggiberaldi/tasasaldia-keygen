@@ -909,15 +909,23 @@
             const prodColor = l.apps?.color || '#94a3b8';
             const prodName = l.apps?.short_name || l.product_id;
 
+            const isExpiredDemo = l.type === 'demo7' && new Date(l.expires_at) <= new Date();
+
             const actionBtns = l.active ? `
                 <button onclick="revokeLicense('${l.id}')" class="shrink-0 text-[9px] font-black text-rose-400 bg-rose-400/10 hover:bg-rose-400 hover:text-white px-2 py-1 rounded transition-colors uppercase border border-rose-400/20">
                     Revocar
                 </button>
             ` : `
                 <div class="flex gap-1">
+                    ${isExpiredDemo ? `
+                    <button onclick="renewDemoLicense('${l.id}')" class="shrink-0 text-[9px] font-black text-amber-400 bg-amber-400/10 hover:bg-amber-400 hover:text-white px-2 py-1 rounded transition-colors uppercase border border-amber-400/20" title="Dar 7 días más">
+                        +7 Días
+                    </button>
+                    ` : `
                     <button onclick="reactivateLicense('${l.id}')" class="shrink-0 text-[9px] font-black text-emerald-400 bg-emerald-400/10 hover:bg-emerald-400 hover:text-white px-2 py-1 rounded transition-colors uppercase border border-emerald-400/20">
                         Reactivar
                     </button>
+                    `}
                     <button onclick="deleteLicense('${l.id}', '${l.device_id}')" class="shrink-0 text-[9px] font-black text-rose-400 bg-rose-400/10 hover:bg-rose-400 hover:text-white px-2 py-1 rounded transition-colors uppercase border border-rose-400/20">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
@@ -1080,6 +1088,37 @@
             } catch (err) {
                 console.error(err);
                 showToast('Error al reactivar', 'error')
+            }
+        }
+
+        async function renewDemoLicense(id) {
+            const confirmed = await showConfirmModal(
+                'Renovar Demo 7 Días',
+                '¿Deseas reactivar esta demo y darle 7 días más de prueba a partir de este momento?',
+                'Sí, renovar',
+                'Cancelar'
+            )
+            if (!confirmed) return;
+
+            try {
+                showToast('Renovando Demo...', 'success')
+
+                // Calculate new expiration date (current time + 7 days)
+                const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+                const { error } = await db.from('licenses')
+                    .update({
+                        active: true,
+                        expires_at: newExpiresAt
+                    })
+                    .eq('id', id);
+
+                if (error) throw error;
+                showToast('Demo renovada por 7 días ✓', 'success')
+                loadDashboard()
+            } catch (err) {
+                console.error(err);
+                showToast('Error al renovar demo', 'error')
             }
         }
 
