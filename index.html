@@ -220,11 +220,11 @@
                     hover:border-slate-500">
                             30 días
                         </button>
-                        <button onclick="setType('demo7')" id="type_demo7" class="type-btn flex-1 py-2 rounded-lg text-[10px] font-black
+                        <button onclick="setType('demo3')" id="type_demo3" class="type-btn flex-1 py-2 rounded-lg text-[10px] font-black
                     uppercase transition-all active:scale-95
                     bg-slate-800/60 text-slate-400 border border-slate-700/60
                     hover:border-slate-500">
-                            7 días
+                            3 días
                         </button>
                     </div>
                 </div>
@@ -537,7 +537,7 @@
         // ═══════════════════════════════════════════
         function setType(type) {
             currentType = type
-            const types = ['permanent', 'demo30', 'demo7']
+            const types = ['permanent', 'demo30', 'demo3']
             types.forEach(t => {
                 const btn = document.getElementById(`type_${t}`)
                 if (t === type) {
@@ -560,7 +560,7 @@
                 note.classList.add('flex')
                 noteText.innerText = type === 'demo30'
                     ? 'Licencia temporal — expira en 30 días'
-                    : 'Licencia temporal — expira en 7 días'
+                    : 'Licencia temporal — expira en 3 días'
             }
 
             document.getElementById('resultContainer').classList.add('hidden')
@@ -610,7 +610,7 @@
                 let expiresAt = null
                 let expiresText = null
                 const days = currentType === 'demo30' ? 30
-                    : currentType === 'demo7' ? 7 : 0
+                    : currentType === 'demo3' ? 3 : 0
                 if (days > 0) {
                     expiresAt = Date.now() + days * 24 * 60 * 60 * 1000
                     expiresText = `Expira el ${new Date(expiresAt)
@@ -629,7 +629,7 @@
                 document.getElementById('resultText').innerText = code
                 document.getElementById('typeBadge').innerText =
                     currentType === 'permanent' ? 'Permanente'
-                        : currentType === 'demo30' ? '30 días' : '7 días'
+                        : currentType === 'demo30' ? '30 días' : '3 días'
                 document.getElementById('deviceInfo').innerText = devId
                 document.getElementById('productInfo').innerText = p.shortName
 
@@ -698,7 +698,7 @@
             const tipoLabel =
                 type === 'permanent' ? 'Licencia Permanente'
                     : type === 'demo30' ? 'Licencia 30 días'
-                        : 'Licencia 7 días'
+                        : 'Licencia 3 días'
 
             const lines = [
                 `*${p.name}*`,
