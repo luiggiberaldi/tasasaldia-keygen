@@ -214,17 +214,11 @@
                     bg-yellow-400 text-slate-900">
                             <i class="fa-solid fa-infinity mr-1"></i>Permanente
                         </button>
-                        <button onclick="setType('demo30')" id="type_demo30" class="type-btn flex-1 py-2 rounded-lg text-[10px] font-black
+                        <button onclick="setType('demo7')" id="type_demo7" class="type-btn flex-1 py-2 rounded-lg text-[10px] font-black
                     uppercase transition-all active:scale-95
                     bg-slate-800/60 text-slate-400 border border-slate-700/60
                     hover:border-slate-500">
-                            30 días
-                        </button>
-                        <button onclick="setType('demo3')" id="type_demo3" class="type-btn flex-1 py-2 rounded-lg text-[10px] font-black
-                    uppercase transition-all active:scale-95
-                    bg-slate-800/60 text-slate-400 border border-slate-700/60
-                    hover:border-slate-500">
-                            3 días
+                            7 días
                         </button>
                     </div>
                 </div>
@@ -402,10 +396,6 @@
                         class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-amber-500/50">
                         7d
                     </button>
-                    <button onclick="toggleFilter(this, 'type', 'demo30')" data-active="false"
-                        class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-amber-500/50">
-                        30d
-                    </button>
                 </div>
 
                 <!-- License List -->
@@ -537,7 +527,7 @@
         // ═══════════════════════════════════════════
         function setType(type) {
             currentType = type
-            const types = ['permanent', 'demo30', 'demo3']
+            const types = ['permanent', 'demo7']
             types.forEach(t => {
                 const btn = document.getElementById(`type_${t}`)
                 if (t === type) {
@@ -558,9 +548,7 @@
             } else {
                 note.classList.remove('hidden')
                 note.classList.add('flex')
-                noteText.innerText = type === 'demo30'
-                    ? 'Licencia temporal — expira en 30 días'
-                    : 'Licencia temporal — expira en 3 días'
+                noteText.innerText = 'Licencia temporal — expira en 7 días'
             }
 
             document.getElementById('resultContainer').classList.add('hidden')
@@ -609,8 +597,7 @@
                 // Calcular expiración
                 let expiresAt = null
                 let expiresText = null
-                const days = currentType === 'demo30' ? 30
-                    : currentType === 'demo3' ? 3 : 0
+                const days = currentType === 'demo7' ? 7 : 0
                 if (days > 0) {
                     expiresAt = Date.now() + days * 24 * 60 * 60 * 1000
                     expiresText = `Expira el ${new Date(expiresAt)
@@ -628,8 +615,7 @@
                 // Mostrar resultado
                 document.getElementById('resultText').innerText = code
                 document.getElementById('typeBadge').innerText =
-                    currentType === 'permanent' ? 'Permanente'
-                        : currentType === 'demo30' ? '30 días' : '3 días'
+                    currentType === 'permanent' ? 'Permanente' : '7 días'
                 document.getElementById('deviceInfo').innerText = devId
                 document.getElementById('productInfo').innerText = p.shortName
 
@@ -695,10 +681,7 @@
             if (!lastGenerated) return
             const { code, devId, type, expiresText, product } = lastGenerated
             const p = PRODUCTS[product]
-            const tipoLabel =
-                type === 'permanent' ? 'Licencia Permanente'
-                    : type === 'demo30' ? 'Licencia 30 días'
-                        : 'Licencia 3 días'
+            const tipoLabel = type === 'permanent' ? 'Licencia Permanente' : 'Licencia 7 días'
 
             const lines = [
                 `*${p.name}*`,
@@ -914,8 +897,7 @@
         }
 
         function renderLicenseCard(l) {
-            const isTypePerm = l.type === 'permanent';
-            const labelTipo = isTypePerm ? 'PERMANENTE' : (l.type === 'demo30' ? '30 DÍAS' : (l.type === 'demo3' ? '3 DÍAS' : '7 DÍAS'));
+            const labelTipo = isTypePerm ? 'PERMANENTE' : '7 DÍAS';
 
             const badgeClass = l.active
                 ? 'bg-emerald-900/40 text-emerald-400 border-emerald-500/20'

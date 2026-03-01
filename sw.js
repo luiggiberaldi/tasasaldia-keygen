@@ -1,4 +1,4 @@
-const CACHE_NAME = 'estacion-maestra-v2'
+const CACHE_NAME = 'estacion-maestra-v3'
 
 const STATIC_ASSETS = [
     './',
