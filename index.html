@@ -897,6 +897,7 @@
         }
 
         function renderLicenseCard(l) {
+            const isTypePerm = l.type === 'permanent';
             const labelTipo = isTypePerm ? 'PERMANENTE' : '7 DÍAS';
 
             const badgeClass = l.active
