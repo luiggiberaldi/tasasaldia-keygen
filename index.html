@@ -634,10 +634,21 @@
 
                 addToLog(devId, code, currentType, expiresText, p.shortName)
 
-                // NOTA: A petición del usuario, la licencia YA NO se registra
-                // automáticamente en Supabase al generarla. Se registrará
-                // cuando el usuario la active realmente en su dispositivo.
-                showToast('Código generado exitosamente ✓')
+                // Guardar en Supabase
+                db.from('licenses').upsert({
+                    device_id: devId,
+                    product_id: currentProduct,
+                    type: currentType,
+                    active: true,
+                    expires_at: expiresAt
+                        ? new Date(expiresAt).toISOString()
+                        : null,
+                    code: code,
+                }, { onConflict: 'device_id,product_id' })
+                    .then(({ error }) => {
+                        if (!error) showToast('Licencia registrada en sistema ✓')
+                    })
+                    .catch(() => { })  // nunca bloquear si falla la red
 
             } catch (err) {
                 console.error(err)
@@ -957,15 +968,7 @@
             `
 
             try {
-                // 1. Get ALL demos first (needed for filtering)
-                const { data: demoData } = await db
-                    .from('demos')
-                    .select('device_id, product_id, expires_at, activated_at, app_version')
-                    .order('activated_at', { ascending: false })
-
-                allDemos = demoData || [];
-
-                // 2. Get ALL licenses
+                // Get ALL licenses (no limit for full filtering)
                 const { data: licenseData, error } = await db
                     .from('licenses')
                     .select('*, apps(name, color, short_name)')
@@ -973,17 +976,17 @@
 
                 if (error) throw error
 
-                // 3. Filter allLicenses to REMOVE ghost demos
-                // A license is valid if it's 'permanent' OR if it's 'demo7' AND exists in allDemos
-                const activeLicenses = (licenseData || []).filter(l => {
-                    if (l.type === 'permanent') return true;
-                    // If it's a demo, it must exist in the demos table to be shown
-                    return allDemos.some(d => d.device_id === l.device_id && d.product_id === l.product_id);
-                });
+                allLicenses = licenseData || [];
 
-                allLicenses = activeLicenses;
+                // Get demos
+                const { data: demoData } = await db
+                    .from('demos')
+                    .select('device_id, product_id, expires_at, activated_at, app_version')
+                    .order('activated_at', { ascending: false })
 
-                // 4. Demo stats helpers
+                allDemos = demoData || [];
+
+                // Demo stats helpers
                 const isPermanent = (d) => allLicenses.some(l =>
                     l.device_id === d.device_id &&
                     l.product_id === d.product_id &&
@@ -1004,7 +1007,7 @@
                         !isPermanent(d)
                     ).length;
 
-                // Update Stats based on the filtered active licenses
+                // Update Stats
                 const tasasCount = allLicenses.filter(l => l.product_id === 'tasas').length
                 const bodegaCount = allLicenses.filter(l => l.product_id === 'bodega').length
 
