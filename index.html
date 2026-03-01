@@ -69,53 +69,9 @@
 <body class="min-h-screen flex items-center justify-center p-4">
 
     <!-- ════════════════════════════
-     PANTALLA 1 — PIN DE ACCESO
-════════════════════════════ -->
-    <div id="pinScreen" class="glass w-full max-w-sm rounded-[2rem] p-7 relative overflow-hidden">
-        <div class="absolute -top-16 -right-16 w-36 h-36
-      bg-yellow-400/10 blur-3xl rounded-full"></div>
-
-        <div class="text-center mb-7">
-            <div class="inline-flex items-center justify-center w-14 h-14
-          rounded-2xl bg-slate-800/60 border border-slate-700/50
-          mb-4 text-yellow-400 shadow-lg">
-                <i class="fa-solid fa-shield-halved text-2xl"></i>
-            </div>
-            <h1 class="text-xl font-black text-white">Panel Administrativo</h1>
-            <p class="text-[11px] text-slate-500 mt-1 uppercase
-          tracking-widest font-bold">
-                Acceso Restringido
-            </p>
-        </div>
-
-        <div class="space-y-3">
-            <div class="relative">
-                <i class="fa-solid fa-lock absolute left-3.5 top-1/2
-              -translate-y-1/2 text-slate-500 text-sm pointer-events-none"></i>
-                <input type="password" id="pinInput" placeholder="PIN de administrador" maxlength="30" class="w-full bg-slate-900/60 border border-slate-700/50
-                text-white rounded-xl py-3.5 pl-10 pr-4
-                focus:outline-none focus:border-yellow-400
-                focus:ring-1 focus:ring-yellow-400/30
-                transition-all font-mono text-sm shadow-inner">
-            </div>
-            <button onclick="checkPin()" class="w-full bg-yellow-400 hover:bg-yellow-300 text-slate-900
-            font-black rounded-xl py-3.5 transition-all active:scale-95
-            flex items-center justify-center gap-2 shadow-lg
-            shadow-yellow-400/10 text-sm uppercase tracking-wide">
-                <i class="fa-solid fa-arrow-right-to-bracket"></i>
-                Entrar
-            </button>
-            <p id="pinError" class="text-center text-xs text-rose-400 font-bold
-            hidden animate-pulse pt-1">
-                PIN incorrecto. Intentos restantes: <span id="attemptsLeft">5</span>
-            </p>
-        </div>
-    </div>
-
-    <!-- ════════════════════════════
      PANTALLA 2 — GENERADOR
 ════════════════════════════ -->
-    <div id="mainScreen" class="hidden w-full max-w-sm space-y-4">
+    <div id="mainScreen" class="w-full max-w-sm space-y-4 fade-in">
 
         <!-- Selector de Producto -->
         <div class="glass rounded-2xl p-4">
@@ -317,7 +273,7 @@
         // CONFIGURACIÓN CENTRAL — SOLO EDITAR AQUÍ
         // ═══════════════════════════════════════════
 
-        const ADMIN_PIN = 'PAD2026VIP'     // Cambia esto a tu PIN secreto
+        const ADMIN_PIN = 'Lvbp1994**'     // Cambia esto a tu PIN secreto
         const ADMIN_WA = '584124051793'   // Tu WhatsApp
 
         // Claves DEBEN ser idénticas a cada app
@@ -347,45 +303,8 @@
         // ═══════════════════════════════════════════
         let currentProduct = 'tasas'
         let currentType = 'permanent'
-        let pinAttempts = 0
-        let pinBlocked = false
         let sessionLog = []
         let lastGenerated = null
-
-        // ═══════════════════════════════════════════
-        // PIN
-        // ═══════════════════════════════════════════
-        document.getElementById('pinInput')
-            .addEventListener('keypress', e => {
-                if (e.key === 'Enter') checkPin()
-            })
-
-        function checkPin() {
-            if (pinBlocked) {
-                showToast('Acceso bloqueado. Recarga la página.', 'error')
-                return
-            }
-            const val = document.getElementById('pinInput').value
-            if (val === ADMIN_PIN) {
-                document.getElementById('pinScreen').classList.add('hidden')
-                document.getElementById('mainScreen').classList.remove('hidden')
-                document.getElementById('mainScreen').classList.add('fade-in')
-            } else {
-                pinAttempts++
-                const left = 5 - pinAttempts
-                document.getElementById('attemptsLeft').innerText = left
-                document.getElementById('pinError').classList.remove('hidden')
-                document.getElementById('pinInput').value = ''
-                document.getElementById('pinInput').focus()
-                if (navigator.vibrate) navigator.vibrate([60, 40, 60])
-                if (pinAttempts >= 5) {
-                    pinBlocked = true
-                    showToast('Demasiados intentos. Recarga para intentar de nuevo.', 'error')
-                } else {
-                    showToast(`PIN incorrecto (${pinAttempts}/5)`, 'error')
-                }
-            }
-        }
 
         // ═══════════════════════════════════════════
         // SELECCIÓN DE PRODUCTO
