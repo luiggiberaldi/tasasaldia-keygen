@@ -1127,8 +1127,10 @@
                     ${actionBtns}
                 </div>
                 <div class="flex items-center gap-3 text-[9px] text-slate-500 font-bold border-t border-slate-800/50 pt-2 mt-1">
-                    <span><i class="fa-solid fa-tag"></i> ${labelTipo}</span>
-                    <span><i class="fa-regular fa-calendar"></i> ${new Date(l.created_at).toLocaleDateString('es-VE')}</span>
+                    <button onclick="changeLicenseType('${l.id}', '${l.type}', '${l.device_id}')" class="hover:text-yellow-400 transition-colors cursor-pointer flex items-center gap-1 bg-slate-800/50 px-2 py-0.5 rounded border border-slate-700/50 hover:border-yellow-400/50 active:scale-95">
+                        <i class="fa-solid fa-tag"></i> ${labelTipo}
+                    </button>
+                    <span class="flex items-center gap-1"><i class="fa-regular fa-calendar"></i> ${new Date(l.created_at).toLocaleDateString('es-VE')}</span>
                 </div>
             </div>`;
         }
@@ -1299,6 +1301,43 @@
             } catch (err) {
                 console.error(err);
                 showToast('Error al renovar demo', 'error')
+            }
+        }
+
+        async function changeLicenseType(id, currentType, deviceId) {
+            const newType = currentType === 'permanent' ? 'demo7' : 'permanent';
+            const actionText = newType === 'demo7' ? '7 Días' : 'Permanente';
+
+            const confirmed = await showConfirmModal(
+                'Cambiar Tipo de Licencia',
+                `Vas a cambiar la licencia de <b>${deviceId}</b> a <b>${actionText}</b>. ¿Estás seguro?`,
+                'Sí, cambiar',
+                'Cancelar'
+            )
+            if (!confirmed) return;
+
+            try {
+                showToast('Cambiando tipo...', 'success')
+
+                let updateData = { type: newType };
+                if (newType === 'demo7') {
+                    // Asignar 7 días desde hoy
+                    updateData.expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+                } else {
+                    // Permanente -> remover expires
+                    updateData.expires_at = null;
+                }
+
+                const { error } = await db.from('licenses')
+                    .update(updateData)
+                    .eq('id', id);
+
+                if (error) throw error;
+                showToast(`Licencia cambiada a ${actionText} ✓`, 'success')
+                loadDashboard()
+            } catch (err) {
+                console.error(err);
+                showToast('Error al cambiar licencia', 'error')
             }
         }
 
