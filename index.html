@@ -1116,8 +1116,14 @@
             <div class="bg-slate-900/40 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
                 <div class="flex items-start justify-between">
                     <div>
-                        <div class="flex items-center gap-1.5 mb-1">
-                            <h3 class="font-mono text-sm font-black text-white leading-none">${l.device_id}</h3>
+                        <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                            <h3 class="font-mono text-sm font-black text-white leading-none flex items-center gap-2">
+                                <span>${l.alias || l.device_id}</span>
+                                ${l.alias ? `<span class="text-[10px] font-normal text-slate-500">(${l.device_id})</span>` : ''}
+                                <button onclick="editAlias('${l.id}')" class="text-slate-500 hover:text-emerald-400 transition-colors cursor-pointer" title="Renombrar equipo">
+                                    <i class="fa-solid fa-pen text-[10px]"></i>
+                                </button>
+                            </h3>
                             <div class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ${badgeClass}">
                                 <i class="fa-solid ${badgeIcon} mr-0.5"></i> ${badgeText}
                             </div>
@@ -1270,6 +1276,27 @@
             } catch (err) {
                 console.error(err);
                 showToast('Error al reactivar', 'error')
+            }
+        }
+
+        async function editAlias(id) {
+            const license = allLicenses.find(l => l.id === id);
+            if (!license) return;
+            const newAlias = prompt(`Asignar nombre al equipo ${license.device_id}:\n(Ejemplo: "Laptop de Juan". Déjalo en vacío para borrar)`, license.alias || '');
+            if (newAlias === null) return; // User cancelled
+
+            try {
+                showToast('Guardando nombre...', 'success');
+                const { error } = await db.from('licenses')
+                    .update({ alias: newAlias.trim() || null })
+                    .eq('id', id);
+
+                if (error) throw error;
+                showToast('Nombre guardado ✓', 'success');
+                loadDashboard();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al guardar', 'error');
             }
         }
 
