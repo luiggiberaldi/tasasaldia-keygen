@@ -230,29 +230,36 @@
               tracking-widest mb-3">
                     Seleccionar Producto
                 </p>
-                <div class="grid grid-cols-2 gap-2">
-                    <!-- TasasAlDía -->
+                <div class="grid grid-cols-3 gap-2">
+                    <!-- Revendedor (antes TasasAlDía) -->
                     <button onclick="selectProduct('tasas')" id="btn_tasas" class="product-btn flex flex-col items-center gap-2 p-3
                     rounded-xl border-2 transition-all active:scale-95
                     border-yellow-400 bg-yellow-400/10 text-yellow-400">
                         <i class="fa-solid fa-chart-line text-lg"></i>
                         <div class="text-center">
-                            <p class="text-[11px] font-black leading-tight">
-                                TasasAlDía
-                            </p>
+                            <p class="text-[11px] font-black leading-tight">Revendedor</p>
                             <p class="text-[9px] opacity-60 font-bold">TASAS-XXXX</p>
                         </div>
                     </button>
-                    <!-- PreciosAlDía -->
+                    <!-- PreciosAlDía Bodega -->
                     <button onclick="selectProduct('bodega')" id="btn_bodega" class="product-btn flex flex-col items-center gap-2 p-3
                     rounded-xl border-2 transition-all active:scale-95
                     border-slate-700 bg-slate-800/40 text-slate-400
                     hover:border-slate-500">
                         <i class="fa-solid fa-store text-lg"></i>
                         <div class="text-center">
-                            <p class="text-[11px] font-black leading-tight">
-                                PreciosAlDía
-                            </p>
+                            <p class="text-[11px] font-black leading-tight">Bodega</p>
+                            <p class="text-[9px] opacity-60 font-bold">PDA-XXXX</p>
+                        </div>
+                    </button>
+                    <!-- Comida Rápida -->
+                    <button onclick="selectProduct('comida_rapida')" id="btn_comida_rapida" class="product-btn flex flex-col items-center gap-2 p-3
+                    rounded-xl border-2 transition-all active:scale-95
+                    border-slate-700 bg-slate-800/40 text-slate-400
+                    hover:border-slate-500">
+                        <i class="fa-solid fa-burger text-lg"></i>
+                        <div class="text-center">
+                            <p class="text-[11px] font-black leading-tight">Comida Rápida</p>
                             <p class="text-[9px] opacity-60 font-bold">PDA-XXXX</p>
                         </div>
                     </button>
@@ -643,22 +650,31 @@
         // Claves DEBEN ser idénticas a cada app
         const PRODUCTS = {
             tasas: {
-                name: 'TasasAlDía Premium',
-                shortName: 'TasasAlDía',
+                name: 'Revendedor Premium',
+                shortName: 'Revendedor',
                 icon: 'fa-chart-line',
                 color: '#fcd535',
-                salt: 'VENEZUELA_PRO_2026_GLOBAL',  // = MASTER_SECRET_KEY en useSecurity.js de TasasAlDía
+                salt: 'VENEZUELA_PRO_2026_GLOBAL',  // NO TOCAR — licencias TASAS-XXXX existentes
                 idPrefix: 'TASAS',
-                tokenKey: 'premium_token',           // = localStorage key en TasasAlDía
+                tokenKey: 'premium_token',
             },
             bodega: {
-                name: 'PreciosAlDía Business',
-                shortName: 'PreciosAlDía',
+                name: 'PreciosAlDía Bodega',
+                shortName: 'Bodega',
                 icon: 'fa-store',
                 color: '#10b981',
-                salt: 'PRECIOS_ALDIA_BODEGA_2026',  // = VITE_LICENSE_SALT en .env de PreciosAlDía
+                salt: 'PRECIOS_ALDIA_BODEGA_2026',  // NO TOCAR — licencias PDA-XXXX existentes
                 idPrefix: 'PDA',
-                tokenKey: 'pda_premium_token',       // = localStorage key en PreciosAlDía
+                tokenKey: 'pda_premium_token',
+            },
+            comida_rapida: {
+                name: 'Comida Rápida',
+                shortName: 'ComidaRápida',
+                icon: 'fa-burger',
+                color: '#ef4444',
+                salt: 'PRECIOS_ALDIA_COMIDA_RAPIDA_2026',  // = VITE_LICENSE_SALT en .env de ComidaRapida
+                idPrefix: 'PDA',
+                tokenKey: 'pda_premium_token',
             },
         }
 
