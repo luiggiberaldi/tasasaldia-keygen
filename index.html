@@ -991,6 +991,7 @@
 
             if (tabId === 'dash') {
                 loadDashboard();
+                startRealtimeSync(); // start live updates
                 // Visually activate the 'Activa' chip to match default filter state
                 setTimeout(() => {
                     const activeChip = document.querySelector('[onclick*="status\', \'active"]');
@@ -1000,6 +1001,8 @@
                         activeChip.classList.add('bg-emerald-900/40', 'text-emerald-400', 'border-emerald-500/30');
                     }
                 }, 0);
+            } else {
+                stopRealtimeSync(); // stop when leaving dashboard
             }
         }
 
@@ -1301,6 +1304,35 @@
                 `
             }
         }
+
+        // ═══════════════════════════════════════════
+        // REALTIME — auto-refresh dashboard on license changes
+        // ═══════════════════════════════════════════
+        let realtimeChannel = null;
+
+        function startRealtimeSync() {
+            if (realtimeChannel) return; // already subscribed
+            realtimeChannel = db
+                .channel('licenses-changes')
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'licenses' },
+                    () => {
+                        // Only refresh if the dashboard tab is visible
+                        if (!document.getElementById('view_dash').classList.contains('hidden')) {
+                            loadDashboard();
+                        }
+                    }
+                )
+                .subscribe();
+        }
+
+        function stopRealtimeSync() {
+            if (realtimeChannel) {
+                db.removeChannel(realtimeChannel);
+                realtimeChannel = null;
+            }
+        }
+
 
         async function revokeLicense(id) {
             const confirmed = await showConfirmModal(
