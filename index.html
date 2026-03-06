@@ -974,7 +974,16 @@
             activeTab.className = 'flex-1 py-2 text-xs font-black uppercase text-slate-900 bg-yellow-400 rounded-lg transition-all active:scale-95'
 
             if (tabId === 'dash') {
-                loadDashboard()
+                loadDashboard();
+                // Visually activate the 'Activa' chip to match default filter state
+                setTimeout(() => {
+                    const activeChip = document.querySelector('[onclick*="status\', \'active"]');
+                    if (activeChip && activeChip.dataset.active !== 'true') {
+                        activeChip.dataset.active = 'true';
+                        activeChip.classList.remove('bg-slate-800/50', 'text-slate-500', 'border-slate-700/40');
+                        activeChip.classList.add('bg-emerald-900/40', 'text-emerald-400', 'border-emerald-500/30');
+                    }
+                }, 0);
             }
         }
 
@@ -983,7 +992,7 @@
         // ═══════════════════════════════════
         let allLicenses = [];
         let allDemos = [];
-        let dashFilters = { status: [], product: [], type: [] };
+        let dashFilters = { status: ['active'], product: [], type: [] }; // default: show only active
         let dashCurrentPage = 1;
         const DASH_PAGE_SIZE = 10;
 
@@ -1076,6 +1085,19 @@
             listEl.innerHTML = pageItems.map(l => renderLicenseCard(l)).join('');
         }
 
+        function timeAgo(dateStr) {
+            if (!dateStr) return 'Nunca';
+            const diff = Date.now() - new Date(dateStr).getTime();
+            const mins = Math.floor(diff / 60000);
+            const hrs = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            if (mins < 2) return 'Ahora mismo';
+            if (mins < 60) return `hace ${mins}m`;
+            if (hrs < 24) return `hace ${hrs}h`;
+            if (days < 30) return `hace ${days}d`;
+            return `hace +30d`;
+        }
+
         function renderLicenseCard(l) {
             const isTypePerm = l.type === 'permanent';
             const labelTipo = isTypePerm ? 'PERMANENTE' : '7 DÍAS';
@@ -1090,6 +1112,26 @@
             const prodName = l.apps?.short_name || l.product_id;
 
             const isExpiredDemo = l.type === 'demo7' && new Date(l.expires_at) <= new Date();
+
+            // ── Last Seen Status ──────────────────────────────────
+            const lastSeen = l.last_seen_at;
+            const diffHrs = lastSeen ? (Date.now() - new Date(lastSeen).getTime()) / 3600000 : 9999;
+            let pulseColor, pulseAnim, onlineLabel;
+            if (!lastSeen) {
+                pulseColor = 'bg-slate-600'; pulseAnim = ''; onlineLabel = 'Sin actividad';
+            } else if (diffHrs < 4) {
+                pulseColor = 'bg-emerald-400'; pulseAnim = 'animate-pulse'; onlineLabel = 'En línea';
+            } else if (diffHrs < 24) {
+                pulseColor = 'bg-amber-400'; pulseAnim = ''; onlineLabel = 'Reciente';
+            } else {
+                pulseColor = 'bg-slate-500'; pulseAnim = ''; onlineLabel = 'Inactivo';
+            }
+            const lastSeenText = timeAgo(lastSeen);
+
+            // ── IP Badge ─────────────────────────────────────────
+            const ipBadge = l.ip_address
+                ? `<span class="flex items-center gap-1"><i class="fa-solid fa-location-dot text-[8px]"></i>${l.ip_address}</span>`
+                : '';
 
             const actionBtns = l.active ? `
                 <button onclick="revokeLicense('${l.id}')" class="shrink-0 text-[9px] font-black text-rose-400 bg-rose-400/10 hover:bg-rose-400 hover:text-white px-2 py-1 rounded transition-colors uppercase border border-rose-400/20">
@@ -1115,7 +1157,7 @@
             return `
             <div class="bg-slate-900/40 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
                 <div class="flex items-start justify-between">
-                    <div>
+                    <div class="flex-1 min-w-0">
                         <div class="flex flex-wrap items-center gap-1.5 mb-1">
                             <h3 class="font-mono text-sm font-black text-white leading-none flex items-center gap-2">
                                 <span>${l.alias || l.device_id}</span>
@@ -1132,6 +1174,18 @@
                     </div>
                     ${actionBtns}
                 </div>
+
+                <!-- Last Seen Bar -->
+                <div class="flex items-center gap-2 bg-slate-950/50 rounded-lg px-2.5 py-1.5 border border-slate-800/60">
+                    <span class="relative flex h-2 w-2 shrink-0">
+                        <span class="absolute inline-flex h-full w-full rounded-full opacity-75 ${pulseColor} ${pulseAnim}"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 ${pulseColor}"></span>
+                    </span>
+                    <span class="text-[9px] font-black uppercase tracking-wider" style="color: ${diffHrs < 4 ? '#34d399' : diffHrs < 24 ? '#fbbf24' : '#64748b'}">${onlineLabel}</span>
+                    <span class="text-[9px] text-slate-500 font-bold ml-auto">${lastSeenText}</span>
+                    ${ipBadge ? `<span class="text-[9px] text-slate-600 font-mono ml-1">${l.ip_address}</span>` : ''}
+                </div>
+
                 <div class="flex items-center gap-3 text-[9px] text-slate-500 font-bold border-t border-slate-800/50 pt-2 mt-1">
                     <button onclick="changeLicenseType('${l.id}', '${l.type}', '${l.device_id}')" class="hover:text-yellow-400 transition-colors cursor-pointer flex items-center gap-1 bg-slate-800/50 px-2 py-0.5 rounded border border-slate-700/50 hover:border-yellow-400/50 active:scale-95">
                         <i class="fa-solid fa-tag"></i> ${labelTipo}
@@ -1140,6 +1194,7 @@
                 </div>
             </div>`;
         }
+
 
         function dashChangePage(delta) {
             dashCurrentPage += delta;
