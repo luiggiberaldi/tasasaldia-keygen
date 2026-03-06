@@ -523,9 +523,51 @@
     </div>
 
     <script>
-        // ═══════════════════════════════════════════
-        // CONFIGURACIÓN CENTRAL — SOLO EDITAR AQUÍ
-        // ═══════════════════════════════════════════
+        // ╔══════════════════════════════════════════════════════╗
+        //   ESTACIÓN MAESTRA — ÍNDICE DE SECCIONES
+        // ╠══════════════════════════════════════════════════════╣
+        //   §1  CONFIGURACIÓN CENTRAL  .............. L~530
+        //       · Supabase URL + anon key
+        //       · WhatsApp admin
+        //       · PRODUCTS (salts, prefijos, colores)
+        //
+        //   §2  AUTENTICACIÓN (PIN + BIOMÉTRICA) ... L~538
+        //       · hashPin(), enterPin(), deletePin()
+        //       · unlockApp(), tryBiometrics()
+        //
+        //   §3  GENERADOR DE LICENCIAS ............. L~690
+        //       · selectProduct(), setType()
+        //       · handleDeviceIdInput()
+        //       · generate() — SHA-256 + Supabase insert
+        //
+        //   §4  UTILIDADES UI ...................... L~867
+        //       · copyCode(), sendWhatsApp()
+        //       · addLog(), clearLog()
+        //       · showToast()
+        //
+        //   §5  TABS & DASHBOARD .................. L~977
+        //       · switchTab()
+        //       · dashFilters, applyDashFilters()
+        //       · renderFilteredLicenses(), renderLicenseCard()
+        //       · loadDashboard()
+        //
+        //   §6  REALTIME (Supabase Realtime) ....... L~1309
+        //       · startRealtimeSync(), stopRealtimeSync()
+        //
+        //   §7  ACCIONES DE LICENCIAS ............. L~1338
+        //       · revokeLicense(), reactivateLicense()
+        //       · deleteLicense(), editAlias()
+        //       · renewDemoLicense(), changeLicenseType()
+        //
+        //   §8  PWA / SERVICE WORKER .............. L~1507
+        //       · beforeinstallprompt handler
+        //       · showConfirmModal()
+        //       · registerServiceWorker()
+        // ╚══════════════════════════════════════════════════════╝
+
+        // ─────────────────────────────────────────────────────────
+        // §1  CONFIGURACIÓN CENTRAL — SOLO EDITAR AQUÍ
+        // ─────────────────────────────────────────────────────────
 
         // PIN se valida via SHA-256 hash (PIN_HASH). No almacenar en texto plano.
         const ADMIN_WA = '584124051793'   // Tu WhatsApp
@@ -534,9 +576,9 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqYnpldm50cmVveHB1b2Zna3lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NjE4MDIsImV4cCI6MjA4NzAzNzgwMn0.wyyISEMsTEl__QgeckSVWgX1isif8iZOblO8GNso-TQ'  // anon key del proyecto
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
-        // ═══════════════════════════════════════════
-        // AUTENTICACIÓN (PIN / BIOMETRÍA)
-        // ═══════════════════════════════════════════
+        // ─────────────────────────────────────────────────────────
+        // §2  AUTENTICACIÓN — PIN + BIOMETRÍA
+        // ─────────────────────────────────────────────────────────
         const PIN_HASH = '61b9237617f079e2241b2ffddec6a3bf5dd1b767ab8beab10d32050f651f0d1d';
         let currentPin = '';
 
@@ -647,6 +689,9 @@
             checkBiometricSupport();
         });
 
+        // ─────────────────────────────────────────────────────────
+        // §3a PRODUCTOS — salts y prefijos (¡NO CAMBIAR SALTS!)
+        // ─────────────────────────────────────────────────────────
         // Claves DEBEN ser idénticas a cada app
         const PRODUCTS = {
             tasas: {
@@ -672,23 +717,23 @@
                 shortName: 'ComidaRápida',
                 icon: 'fa-burger',
                 color: '#ef4444',
-                salt: 'PRECIOS_ALDIA_COMIDA_RAPIDA_2026',  // = VITE_LICENSE_SALT en .env de ComidaRapida
-                idPrefix: 'PDA',
+                salt: 'PRECIOS_ALDIA_COMIDA_RAPIDA_2026',
+                idPrefix: 'CRP',
                 tokenKey: 'pda_premium_token',
             },
         }
 
-        // ═══════════════════════════════════════════
-        // ESTADO
-        // ═══════════════════════════════════════════
+        // ─────────────────────────────────────────────────────────
+        // §3b ESTADO GLOBAL
+        // ─────────────────────────────────────────────────────────
         let currentProduct = 'tasas'
         let currentType = 'permanent'
         let sessionLog = []
         let lastGenerated = null
 
-        // ═══════════════════════════════════════════
-        // SELECCIÓN DE PRODUCTO
-        // ═══════════════════════════════════════════
+        // ─────────────────────────────────────────────────────────
+        // §3c SELECCIÓN DE PRODUCTO
+        // ─────────────────────────────────────────────────────────
         function selectProduct(id) {
             currentProduct = id
             const p = PRODUCTS[id]
@@ -729,9 +774,9 @@
             document.getElementById('resultContainer').classList.remove('fade-in')
         }
 
-        // ═══════════════════════════════════════════
-        // TIPO DE LICENCIA
-        // ═══════════════════════════════════════════
+        // ─────────────────────────────────────────────────────────
+        // §3d TIPO DE LICENCIA
+        // ─────────────────────────────────────────────────────────
         function setType(type) {
             currentType = type
             const types = ['permanent', 'demo7']
@@ -761,21 +806,23 @@
             document.getElementById('resultContainer').classList.add('hidden')
         }
 
-        // ═══════════════════════════════════════════
-        // AUTODETECT PRODUCT FROM DEVICE ID PREFIX
-        // ═══════════════════════════════════════════
+        // ─────────────────────────────────────────────────────────
+        // §3e AUTODETECT PRODUCTO DESDE PREFIJO DEL ID
+        // ─────────────────────────────────────────────────────────
         function handleDeviceIdInput(val) {
             const v = val.trim().toUpperCase()
             if (v.startsWith('TAS') && currentProduct !== 'tasas') {
                 selectProduct('tasas')
+            } else if (v.startsWith('CRP') && currentProduct !== 'comida_rapida') {
+                selectProduct('comida_rapida')
             } else if (v.startsWith('PDA') && currentProduct !== 'bodega') {
                 selectProduct('bodega')
             }
         }
 
-        // ═══════════════════════════════════════════
-        // GENERADOR SHA-256
-        // ═══════════════════════════════════════════
+        // ─────────────────────────────────────────────────────────
+        // §3f GENERADOR DE CÓDIGO — SHA-256
+        // ─────────────────────────────────────────────────────────
         document.getElementById('devId')
             .addEventListener('keypress', e => {
                 if (e.key === 'Enter') generate()
@@ -863,9 +910,9 @@
             }
         }
 
-        // ═══════════════════════════════════════════
-        // COPIAR
-        // ═══════════════════════════════════════════
+        // ─────────────────────────────────────────────────────────
+        // §4a UTILIDADES — COPIAR AL PORTAPAPELES
+        // ─────────────────────────────────────────────────────────
         function copyCode() {
             const text = document.getElementById('resultText').innerText
             if (!text) return
@@ -881,9 +928,9 @@
             })
         }
 
-        // ═══════════════════════════════════════════
-        // WHATSAPP
-        // ═══════════════════════════════════════════
+        // ─────────────────────────────────────────────────────────
+        // §4b UTILIDADES — ENVIAR POR WHATSAPP
+        // ─────────────────────────────────────────────────────────
         function sendWhatsApp() {
             if (!lastGenerated) return
             const { code, devId, type, expiresText, product } = lastGenerated
@@ -908,9 +955,9 @@
             )
         }
 
-        // ═══════════════════════════════════════════
-        // LOG DE SESIÓN
-        // ═══════════════════════════════════════════
+        // ─────────────────────────────────────────────────────────
+        // §4c UTILIDADES — LOG DE SESIÓN
+        // ─────────────────────────────────────────────────────────
         function addToLog(devId, code, type, expiresText, productName) {
             sessionLog.unshift({ devId, code, type, expiresText, productName })
             const section = document.getElementById('logSection')
@@ -952,9 +999,9 @@
             document.getElementById('logList').innerHTML = ''
         }
 
-        // ═══════════════════════════════════════════
-        // TOAST
-        // ═══════════════════════════════════════════
+        // ─────────────────────────────────────────────────────────
+        // §4d UTILIDADES — TOAST NOTIFICATIONS
+        // ─────────────────────────────────────────────────────────
         let toastTimer
         function showToast(msg, type = 'success') {
             const el = document.getElementById('toast')
@@ -973,9 +1020,9 @@
             }, 3000)
         }
 
-        // ═══════════════════════════════════════════
-        // DASHBOARD Y TABS
-        // ═══════════════════════════════════════════
+        // ─────────────────────────────────────────────────────────
+        // §5  TABS Y DASHBOARD
+        // ─────────────────────────────────────────────────────────
         function switchTab(tabId) {
             document.getElementById('view_gen').classList.add('hidden')
             document.getElementById('view_dash').classList.add('hidden')
@@ -1006,9 +1053,9 @@
             }
         }
 
-        // ═══════════════════════════════════
-        // DASHBOARD — Filter / Search / Pagination State
-        // ═══════════════════════════════════
+        // ─────────────────────────────────────────────────────────
+        // §5a DASHBOARD — Estado de Filtros y Paginación
+        // ─────────────────────────────────────────────────────────
         let allLicenses = [];
         let allDemos = [];
         let dashFilters = { status: ['active'], product: [], type: [] }; // default: show only active
