@@ -576,6 +576,30 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqYnpldm50cmVveHB1b2Zna3lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NjE4MDIsImV4cCI6MjA4NzAzNzgwMn0.wyyISEMsTEl__QgeckSVWgX1isif8iZOblO8GNso-TQ'  // anon key del proyecto
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
+            // ─── FLUSH: Reintentar licencias pendientes que fallaron antes ───
+            ; (async () => {
+                const pending = JSON.parse(localStorage.getItem('pending_licenses') || '[]')
+                if (pending.length === 0) return
+                console.log(`[Licencia] ${pending.length} licencias pendientes encontradas. Reintentando...`)
+                const stillPending = []
+                for (const lic of pending) {
+                    const copy = { ...lic }
+                    delete copy.failed_at
+                    const { error } = await db.from('licenses').upsert(copy, { onConflict: 'device_id,product_id' })
+                    if (error) {
+                        console.warn('[Licencia] Falló reintento:', lic.device_id, error.message)
+                        stillPending.push(lic)
+                    } else {
+                        console.log('[Licencia] ✓ Pendiente guardada:', lic.device_id)
+                    }
+                }
+                if (stillPending.length > 0) {
+                    localStorage.setItem('pending_licenses', JSON.stringify(stillPending))
+                } else {
+                    localStorage.removeItem('pending_licenses')
+                }
+            })()
+
         // ─────────────────────────────────────────────────────────
         // §2  AUTENTICACIÓN — PIN + BIOMETRÍA
         // ─────────────────────────────────────────────────────────
@@ -888,8 +912,8 @@
 
                 addToLog(devId, code, currentType, expiresText, p.shortName)
 
-                // Guardar en Supabase
-                db.from('licenses').upsert({
+                // Guardar en Supabase (con retry y fallback)
+                const licensePayload = {
                     device_id: devId,
                     product_id: currentProduct,
                     type: currentType,
@@ -898,11 +922,40 @@
                         ? new Date(expiresAt).toISOString()
                         : null,
                     code: code,
-                }, { onConflict: 'device_id,product_id' })
-                    .then(({ error }) => {
-                        if (!error) showToast('Licencia registrada en sistema ✓')
-                    })
-                    .catch(() => { })  // nunca bloquear si falla la red
+                }
+
+                const saveLicense = async (payload, attempt = 1) => {
+                    try {
+                        const { error } = await db.from('licenses').upsert(payload, { onConflict: 'device_id,product_id' })
+                        if (error) {
+                            console.error(`[Licencia] Error guardando (intento ${attempt}):`, error.message)
+                            if (attempt < 3) {
+                                showToast(`⚠️ Reintentando guardar licencia... (${attempt}/3)`, 'warning')
+                                setTimeout(() => saveLicense(payload, attempt + 1), 3000)
+                            } else {
+                                showToast('❌ ERROR: Licencia NO guardada en servidor. Guardada localmente para reintento.', 'error')
+                                // Guardar en cola pendiente para reintentar después
+                                const pending = JSON.parse(localStorage.getItem('pending_licenses') || '[]')
+                                pending.push({ ...payload, failed_at: new Date().toISOString() })
+                                localStorage.setItem('pending_licenses', JSON.stringify(pending))
+                            }
+                        } else {
+                            showToast('Licencia registrada en sistema ✓')
+                        }
+                    } catch (e) {
+                        console.error('[Licencia] Error de red:', e)
+                        if (attempt < 3) {
+                            setTimeout(() => saveLicense(payload, attempt + 1), 3000)
+                        } else {
+                            showToast('❌ Sin conexión. Licencia guardada localmente para reintento.', 'error')
+                            const pending = JSON.parse(localStorage.getItem('pending_licenses') || '[]')
+                            pending.push({ ...payload, failed_at: new Date().toISOString() })
+                            localStorage.setItem('pending_licenses', JSON.stringify(pending))
+                        }
+                    }
+                }
+
+                saveLicense(licensePayload)
 
             } catch (err) {
                 console.error(err)
