@@ -278,7 +278,7 @@
                     </div>
                     <div>
                         <h2 id="productTitle" class="text-base font-black text-white leading-tight">
-                            TasasAlDía Premium
+                            Revendedor Premium
                         </h2>
                         <p id="productSub" class="text-[10px] text-slate-500 font-bold uppercase
                     tracking-wider">
@@ -416,16 +416,21 @@
         <div id="view_dash" class="hidden space-y-4">
 
             <!-- Stats -->
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-3 gap-2">
                 <div class="glass rounded-xl p-3 flex flex-col items-center text-center">
                     <i class="fa-solid fa-chart-line text-yellow-400 mb-1 text-lg"></i>
-                    <p class="text-[10px] text-slate-400 uppercase font-black">TasasAlDía</p>
+                    <p class="text-[10px] text-slate-400 uppercase font-black">Revendedor</p>
                     <p id="stats_tasas" class="text-lg font-black text-white">-</p>
                 </div>
                 <div class="glass rounded-xl p-3 flex flex-col items-center text-center">
                     <i class="fa-solid fa-store text-emerald-400 mb-1 text-lg"></i>
                     <p class="text-[10px] text-slate-400 uppercase font-black">PreciosAlDía</p>
                     <p id="stats_bodega" class="text-lg font-black text-white">-</p>
+                </div>
+                <div class="glass rounded-xl p-3 flex flex-col items-center text-center">
+                    <i class="fa-solid fa-burger text-orange-400 mb-1 text-lg"></i>
+                    <p class="text-[9px] text-slate-400 uppercase font-black truncate w-full">Comida Rápida</p>
+                    <p id="stats_comida" class="text-lg font-black text-white">-</p>
                 </div>
             </div>
 
@@ -465,11 +470,15 @@
                     <!-- Producto -->
                     <button onclick="toggleFilter(this, 'product', 'tasas')" data-active="false"
                         class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-yellow-500/50">
-                        <i class="fa-solid fa-chart-line mr-0.5"></i> Tasas
+                        <i class="fa-solid fa-chart-line mr-0.5"></i> Revendedor
                     </button>
                     <button onclick="toggleFilter(this, 'product', 'bodega')" data-active="false"
                         class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-emerald-500/50">
                         <i class="fa-solid fa-store mr-0.5"></i> Precios
+                    </button>
+                    <button onclick="toggleFilter(this, 'product', 'comida_rapida')" data-active="false"
+                        class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-orange-500/50">
+                        <i class="fa-solid fa-burger mr-0.5"></i> Comida
                     </button>
                     <span class="w-px h-5 bg-slate-700/50 self-center mx-0.5"></span>
                     <!-- Tipo -->
@@ -1372,6 +1381,7 @@
                 // Update Stats
                 const tasasCount = allLicenses.filter(l => l.product_id === 'tasas').length
                 const bodegaCount = allLicenses.filter(l => l.product_id === 'bodega').length
+                const comidaCount = allLicenses.filter(l => l.product_id === 'comida_rapida').length
 
                 document.getElementById('stats_tasas').innerHTML = `
                     <span class="text-lg font-black text-white">${tasasCount}</span>
@@ -1389,6 +1399,15 @@
                     </span>
                     <span class="text-[9px] text-slate-600 font-bold block">
                         ${demosExpiradas('bodega')} expiradas
+                    </span>`
+
+                document.getElementById('stats_comida').innerHTML = `
+                    <span class="text-lg font-black text-white">${comidaCount}</span>
+                    <span class="text-[9px] text-orange-400 font-bold block mt-0.5">
+                        ${demosActivas('comida_rapida')} demos activas
+                    </span>
+                    <span class="text-[9px] text-slate-600 font-bold block">
+                        ${demosExpiradas('comida_rapida')} expiradas
                     </span>`
 
                 // Apply current filters
