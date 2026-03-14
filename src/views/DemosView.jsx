@@ -184,11 +184,21 @@ export default function DemosView() {
   );
 }
 
+function getActivityStatus(lastActiveStr) {
+  if (!lastActiveStr) return { color: 'bg-slate-500', text: 'Desconectado', label: 'bg-slate-500/10 text-slate-400 border-slate-500/20'};
+  const diffMins = Math.floor((new Date() - new Date(lastActiveStr)) / 60000);
+  if (diffMins < 15) return { color: 'bg-emerald-500', text: 'En línea', label: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' };
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return { color: 'bg-yellow-400', text: diffHours === 0 ? `Hace ${diffMins}m` : `Hace ${diffHours}h`, label: 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20' };
+  return { color: 'bg-rose-500', text: `Hace ${Math.floor(diffHours / 24)}d`, label: 'bg-rose-500/10 text-rose-400 border-rose-500/20' };
+}
+
 function DemoCard({ demo, onDelete, onEditAlias }) {
   const p = PRODUCTS[demo.product_id] || { color: '#94a3b8', shortName: demo.product_id };
   const expiresAt = new Date(demo.expires_at);
   const now = new Date();
   const isExpired = expiresAt < now;
+  const activity = getActivityStatus(demo.last_active_at);
   
   const diffMs = Math.abs(expiresAt - now);
   const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -217,7 +227,22 @@ function DemoCard({ demo, onDelete, onEditAlias }) {
                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
               </button>
             </h3>
-            <p className="text-[10px] font-black uppercase tracking-widest mt-0.5" style={{ color: p.color }}>{p.shortName}</p>
+            <div className="flex flex-wrap items-center gap-2 mt-0.5">
+              <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: p.color }}>{p.shortName}</p>
+              <span className="text-white/20 text-[10px]">&bull;</span>
+              <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border flex items-center gap-1.5 ${activity.label}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${activity.color} ${activity.color === 'bg-emerald-500' ? 'animate-pulse' : ''}`} />
+                {activity.text}
+              </span>
+              {demo.last_ip && (
+                <>
+                  <span className="text-white/20 text-[10px] hidden sm:inline-block">&bull;</span>
+                  <span className="text-[9px] font-mono text-slate-500">
+                    IP: <span className="text-slate-300">{demo.last_ip}</span>
+                  </span>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -231,7 +256,7 @@ function DemoCard({ demo, onDelete, onEditAlias }) {
         </span>
       </div>
 
-      <div className="flex items-center justify-between bg-slate-950/50 rounded-xl px-4 py-3 border border-white/5">
+      <div className="flex items-center justify-between bg-slate-950/50 rounded-xl px-4 py-3 border border-white/5 mt-1">
         <div className="flex items-center gap-2">
           <Clock size={14} className={isExpired ? 'text-rose-400' : 'text-slate-500'} />
           <span className={`text-[11px] font-black uppercase tracking-widest ${isExpired ? 'text-rose-400' : 'text-slate-300'}`}>

@@ -279,9 +279,19 @@ export default function DashboardView() {
   );
 }
 
+function getActivityStatus(lastActiveStr) {
+  if (!lastActiveStr) return { color: 'bg-slate-500', text: 'Desconectado', label: 'bg-slate-500/10 text-slate-400 border-slate-500/20'};
+  const diffMins = Math.floor((new Date() - new Date(lastActiveStr)) / 60000);
+  if (diffMins < 15) return { color: 'bg-emerald-500', text: 'En línea', label: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' };
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return { color: 'bg-yellow-400', text: diffHours === 0 ? `Hace ${diffMins}m` : `Hace ${diffHours}h`, label: 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20' };
+  return { color: 'bg-rose-500', text: `Hace ${Math.floor(diffHours / 24)}d`, label: 'bg-rose-500/10 text-rose-400 border-rose-500/20' };
+}
+
 function LicenseCard({ license, onRevoke, onEditAlias }) {
   const p = PRODUCTS[license.product_id] || { color: '#94a3b8', shortName: license.product_id };
   const isPermanent = license.type === 'permanent';
+  const activity = getActivityStatus(license.last_active_at);
 
   return (
     <div className="glass-card flex items-center gap-4 group">
@@ -298,7 +308,7 @@ function LicenseCard({ license, onRevoke, onEditAlias }) {
            <h3 className="font-mono text-[13px] font-black text-white leading-none tracking-tight flex items-center gap-2">
             <span>{license.alias || license.device_id}</span>
             {license.alias && (
-              <span className="text-[10px] font-normal text-slate-500">
+              <span className="text-[10px] font-normal text-slate-500 hidden sm:inline-block">
                 ({license.device_id})
               </span>
             )}
@@ -307,12 +317,11 @@ function LicenseCard({ license, onRevoke, onEditAlias }) {
               className="text-slate-500 hover:text-emerald-400 transition-colors cursor-pointer" 
               title="Renombrar equipo"
             >
-               {/* Usamos un ícono SVG nativo para el lápiz (edit) si lucide no fue importado */}
                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
             </button>
           </h3>
           <span className={`
-            px-1.5 py-0.5 rounded text-[8px] font-black uppercase border
+            px-1.5 py-0.5 rounded text-[8px] font-black uppercase border flex items-center gap-1
             ${isPermanent 
               ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' 
               : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}
@@ -325,9 +334,25 @@ function LicenseCard({ license, onRevoke, onEditAlias }) {
             </span>
           )}
         </div>
-        <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: p.color }}>
-          {p.shortName}
-        </p>
+        
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-[9px] font-black uppercase tracking-widest" style={{ color: p.color }}>
+            {p.shortName}
+          </p>
+          <span className="text-white/20 text-[10px]">&bull;</span>
+          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border flex items-center gap-1.5 ${activity.label}`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${activity.color} ${activity.color === 'bg-emerald-500' ? 'animate-pulse' : ''}`} />
+            {activity.text}
+          </span>
+          {license.last_ip && (
+            <>
+              <span className="text-white/20 text-[10px] hidden sm:inline-block">&bull;</span>
+              <span className="text-[9px] font-mono text-slate-500">
+                IP: <span className="text-slate-300">{license.last_ip}</span>
+              </span>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="text-right flex flex-col items-end gap-2">
