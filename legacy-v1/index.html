@@ -1,0 +1,1901 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,
+      initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#fcd535">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Admin Panel">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Master Key Gen · Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #020617;
+            color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont,
+                "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+        }
+
+        input {
+            text-transform: uppercase;
+        }
+
+        input[type=password] {
+            text-transform: none;
+        }
+
+        input::placeholder {
+            text-transform: none;
+            color: #475569;
+        }
+
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Custom Confirm Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-box {
+            background: linear-gradient(145deg, #0f172a, #1e293b);
+            border: 1px solid rgba(248, 113, 113, 0.15);
+            border-radius: 1rem;
+            padding: 1.75rem;
+            max-width: 340px;
+            width: 90%;
+            box-shadow: 0 25px 60px -12px rgba(239, 68, 68, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.03);
+            transform: scale(0.92) translateY(10px);
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-overlay.active .modal-box {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+
+        .modal-icon i {
+            font-size: 1.25rem;
+            color: #f87171;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-6px);
+            }
+
+            40%,
+            80% {
+                transform: translateX(6px);
+            }
+        }
+
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- ════════════════════════════
+         PANTALLA 1 — LOCK SCREEN
+    ════════════════════════════ -->
+    <div id="lockScreen"
+        class="w-full max-w-sm space-y-6 flex flex-col items-center justify-center fade-in absolute inset-0 bg-[#020617] z-50 p-4 transition-opacity duration-300">
+        <div class="text-center space-y-2 mb-4">
+            <div
+                class="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto shadow-2xl shadow-yellow-400/10 overflow-hidden mb-6">
+                <img src="icon-192.png" alt="Logo" class="w-full h-full object-cover">
+            </div>
+            <h1 class="text-xl font-black text-white tracking-tight">Estación Maestra</h1>
+            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Acceso Restringido</p>
+        </div>
+
+        <div id="pinDots" class="flex gap-3 mb-4">
+            <div class="w-4 h-4 rounded-full bg-slate-800 border border-slate-700 transition-all pin-dot"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-800 border border-slate-700 transition-all pin-dot"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-800 border border-slate-700 transition-all pin-dot"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-800 border border-slate-700 transition-all pin-dot"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-800 border border-slate-700 transition-all pin-dot"></div>
+            <div class="w-4 h-4 rounded-full bg-slate-800 border border-slate-700 transition-all pin-dot"></div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3 w-full max-w-[280px]">
+            <button onclick="enterPin(1)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">1</button>
+            <button onclick="enterPin(2)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">2</button>
+            <button onclick="enterPin(3)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">3</button>
+            <button onclick="enterPin(4)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">4</button>
+            <button onclick="enterPin(5)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">5</button>
+            <button onclick="enterPin(6)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">6</button>
+            <button onclick="enterPin(7)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">7</button>
+            <button onclick="enterPin(8)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">8</button>
+            <button onclick="enterPin(9)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">9</button>
+            <button onclick="tryBiometrics()" id="bioBtn" style="display: none;"
+                class="h-16 rounded-2xl bg-transparent text-slate-500 hover:text-emerald-400 active:scale-95 transition-all text-2xl"><i
+                    class="fa-solid fa-fingerprint"></i></button>
+            <div id="bioPlaceholder" class="h-16"></div>
+            <button onclick="enterPin(0)"
+                class="h-16 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-3xl font-black text-white active:scale-95 active:bg-slate-700 transition-all shadow-inner">0</button>
+            <button onclick="deletePin()"
+                class="h-16 rounded-2xl bg-transparent text-slate-500 hover:text-rose-400 active:scale-95 transition-all text-2xl"><i
+                    class="fa-solid fa-delete-left"></i></button>
+        </div>
+
+        <p id="lockError" class="text-xs font-bold text-rose-500 h-4 opacity-0 transition-opacity">PIN Incorrecto</p>
+    </div>
+
+    <!-- ════════════════════════════
+     PANTALLA 2 — NAVEGADOR
+════════════════════════════ -->
+    <div id="mainScreen" class="w-full max-w-sm space-y-4 fade-in hidden">
+
+        <!-- Tabs -->
+        <div class="glass flex rounded-xl p-1 relative z-10">
+            <button onclick="switchTab('gen')" id="tab_gen"
+                class="flex-1 py-2 text-xs font-black uppercase text-slate-900 bg-yellow-400 rounded-lg transition-all active:scale-95">
+                <i class="fa-solid fa-key mr-1"></i> Generar
+            </button>
+            <button onclick="switchTab('dash')" id="tab_dash"
+                class="flex-1 py-2 text-xs font-black uppercase text-slate-400 hover:text-white transition-all active:scale-95">
+                <i class="fa-solid fa-users mr-1"></i> Dashboard
+            </button>
+            <button onclick="switchTab('demos')" id="tab_demos"
+                class="flex-1 py-2 text-xs font-black uppercase text-slate-400 hover:text-white transition-all active:scale-95">
+                <i class="fa-solid fa-clock-rotate-left mr-1"></i> Demos
+            </button>
+        </div>
+
+        <!-- ════════════════════════════
+             TAB: GENERADOR
+        ════════════════════════════ -->
+        <div id="view_gen" class="space-y-4">
+
+            <!-- Selector de Producto -->
+            <div class="glass rounded-2xl p-4">
+                <p class="text-[10px] font-black text-slate-500 uppercase
+              tracking-widest mb-3">
+                    Seleccionar Producto
+                </p>
+                <div class="grid grid-cols-3 gap-2">
+                    <!-- Revendedor (antes TasasAlDía) -->
+                    <button onclick="selectProduct('tasas')" id="btn_tasas" class="product-btn flex flex-col items-center gap-2 p-3
+                    rounded-xl border-2 transition-all active:scale-95
+                    border-yellow-400 bg-yellow-400/10 text-yellow-400">
+                        <i class="fa-solid fa-chart-line text-lg"></i>
+                        <div class="text-center">
+                            <p class="text-[11px] font-black leading-tight">Revendedor</p>
+                            <p class="text-[9px] opacity-60 font-bold">TASAS-XXXX</p>
+                        </div>
+                    </button>
+                    <!-- PreciosAlDía Bodega -->
+                    <button onclick="selectProduct('bodega')" id="btn_bodega" class="product-btn flex flex-col items-center gap-2 p-3
+                    rounded-xl border-2 transition-all active:scale-95
+                    border-slate-700 bg-slate-800/40 text-slate-400
+                    hover:border-slate-500">
+                        <i class="fa-solid fa-store text-lg"></i>
+                        <div class="text-center">
+                            <p class="text-[11px] font-black leading-tight">Bodega</p>
+                            <p class="text-[9px] opacity-60 font-bold">PDA-XXXX</p>
+                        </div>
+                    </button>
+                    <!-- Comida Rápida -->
+                    <button onclick="selectProduct('comida_rapida')" id="btn_comida_rapida" class="product-btn flex flex-col items-center gap-2 p-3
+                    rounded-xl border-2 transition-all active:scale-95
+                    border-slate-700 bg-slate-800/40 text-slate-400
+                    hover:border-slate-500">
+                        <i class="fa-solid fa-burger text-lg"></i>
+                        <div class="text-center">
+                            <p class="text-[11px] font-black leading-tight">Comida Rápida</p>
+                            <p class="text-[9px] opacity-60 font-bold">PDA-XXXX</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Formulario principal -->
+            <div class="glass rounded-2xl p-5 space-y-4">
+
+                <!-- Header dinámico -->
+                <div class="flex items-center gap-3">
+                    <div id="productIcon" class="w-10 h-10 rounded-xl flex items-center justify-center
+                bg-yellow-400/15 border border-yellow-400/30 text-yellow-400
+                shrink-0 shadow-sm text-sm">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h2 id="productTitle" class="text-base font-black text-white leading-tight">
+                            Revendedor Premium
+                        </h2>
+                        <p id="productSub" class="text-[10px] text-slate-500 font-bold uppercase
+                    tracking-wider">
+                            Master Key Generator
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Tipo de licencia -->
+                <div>
+                    <p class="text-[10px] font-black text-slate-500
+              uppercase tracking-widest mb-2">
+                        Tipo de licencia
+                    </p>
+                    <div class="flex gap-1.5">
+                        <button onclick="setType('permanent')" id="type_permanent" class="type-btn flex-1 py-2 rounded-lg text-[10px] font-black
+                    uppercase transition-all active:scale-95
+                    bg-yellow-400 text-slate-900">
+                            <i class="fa-solid fa-infinity mr-1"></i>Permanente
+                        </button>
+                        <button onclick="setType('demo7')" id="type_demo7" class="type-btn flex-1 py-2 rounded-lg text-[10px] font-black
+                    uppercase transition-all active:scale-95
+                    bg-slate-800/60 text-slate-400 border border-slate-700/60
+                    hover:border-slate-500">
+                            7 días
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Input Device ID -->
+                <div>
+                    <label class="block text-[10px] font-black text-slate-500
+              uppercase tracking-widest mb-2">
+                        ID del Dispositivo Cliente
+                    </label>
+                    <div class="relative">
+                        <i class="fa-solid fa-fingerprint absolute left-3.5
+                  top-1/2 -translate-y-1/2 text-slate-500
+                  pointer-events-none text-sm"></i>
+                        <input type="text" id="devId" placeholder="TASAS-XXXX, PDA-XXXX, CRP-XXXX"
+                            oninput="handleDeviceIdInput(this.value); this.value = this.value.toUpperCase()" class="w-full bg-slate-900/40 border border-slate-700/50
+                    text-white rounded-xl py-3 pl-10 pr-4
+                    focus:outline-none focus:border-yellow-400
+                    focus:ring-1 focus:ring-yellow-400/30 transition-all
+                    font-mono text-sm shadow-inner">
+                    </div>
+                </div>
+
+                <!-- Nota expiración -->
+                <div id="expiryNote" class="hidden text-[10px] text-amber-400 font-bold
+            bg-amber-950/30 border border-amber-500/20 rounded-lg
+            px-3 py-2 flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span id="expiryText"></span>
+                </div>
+
+                <!-- Generar -->
+                <button onclick="generate()" class="w-full bg-yellow-400 hover:bg-yellow-300 text-slate-900
+            font-black rounded-xl py-3.5 transition-all active:scale-95
+            flex items-center justify-center gap-2 shadow-lg
+            shadow-yellow-400/10 text-sm uppercase tracking-wide">
+                    <i class="fa-solid fa-bolt"></i>
+                    Generar Licencia
+                </button>
+            </div>
+
+            <!-- Resultado -->
+            <div id="resultContainer" class="hidden glass rounded-2xl p-4 fade-in space-y-3">
+                <div class="flex items-center justify-between">
+                    <p class="text-[10px] font-black text-emerald-500
+              uppercase tracking-widest">
+                        Código Generado
+                    </p>
+                    <span id="typeBadge" class="text-[9px] font-black uppercase px-2 py-0.5
+                rounded-full bg-emerald-900/40 text-emerald-400">
+                        Permanente
+                    </span>
+                </div>
+
+                <div class="flex items-center justify-between gap-3
+          bg-slate-900/50 rounded-xl px-3 py-3 border
+          border-slate-800/50">
+                    <p id="resultText" class="font-mono text-xl font-black text-emerald-400
+                tracking-wider truncate"></p>
+                    <button onclick="copyCode()" class="shrink-0 w-9 h-9 rounded-lg bg-emerald-900/40
+                text-emerald-400 hover:bg-emerald-900/70
+                hover:text-white transition-all flex items-center
+                justify-center">
+                        <i id="copyIcon" class="fa-regular fa-copy text-sm"></i>
+                    </button>
+                </div>
+
+                <p id="expiryResult" class="text-[10px] text-amber-400 font-bold hidden"></p>
+
+                <!-- Info del dispositivo -->
+                <div class="flex items-center gap-2 text-[10px] text-slate-500
+          font-bold">
+                    <i class="fa-solid fa-mobile-screen-button opacity-50"></i>
+                    <span id="deviceInfo"></span>
+                    <span class="opacity-40 mx-1">·</span>
+                    <span id="productInfo" class="text-yellow-400/70"></span>
+                </div>
+
+                <!-- WhatsApp -->
+                <button onclick="sendWhatsApp()" class="w-full bg-[#25D366]/10 hover:bg-[#25D366]/20
+            text-[#25D366] font-bold border border-[#25D366]/20
+            rounded-xl py-2.5 transition-all active:scale-95
+            flex items-center justify-center gap-2 text-sm">
+                    <i class="fa-brands fa-whatsapp"></i>
+                    Enviar por WhatsApp
+                </button>
+            </div>
+
+            <!-- Log de sesión -->
+            <div id="logSection" class="hidden glass rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-[10px] font-black text-slate-500
+                  uppercase tracking-widest flex items-center gap-1.5">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        Historial de sesión
+                    </p>
+                    <button onclick="clearLog()" class="text-[9px] text-slate-600 hover:text-rose-400
+                    font-black uppercase transition-colors">
+                        Limpiar
+                    </button>
+                </div>
+                <div id="logList" class="space-y-2 max-h-48 overflow-y-auto">
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════
+             TAB: DASHBOARD
+        ════════════════════════════ -->
+        <div id="view_dash" class="hidden space-y-4">
+
+            <!-- Stats -->
+            <div class="grid grid-cols-3 gap-2">
+                <div class="glass rounded-xl p-3 flex flex-col items-center text-center">
+                    <i class="fa-solid fa-chart-line text-yellow-400 mb-1 text-lg"></i>
+                    <p class="text-[10px] text-slate-400 uppercase font-black">Revendedor</p>
+                    <p id="stats_tasas" class="text-lg font-black text-white">-</p>
+                </div>
+                <div class="glass rounded-xl p-3 flex flex-col items-center text-center">
+                    <i class="fa-solid fa-store text-emerald-400 mb-1 text-lg"></i>
+                    <p class="text-[10px] text-slate-400 uppercase font-black">PreciosAlDía</p>
+                    <p id="stats_bodega" class="text-lg font-black text-white">-</p>
+                </div>
+                <div class="glass rounded-xl p-3 flex flex-col items-center text-center">
+                    <i class="fa-solid fa-burger text-orange-400 mb-1 text-lg"></i>
+                    <p class="text-[9px] text-slate-400 uppercase font-black truncate w-full">Comida Rápida</p>
+                    <p id="stats_comida" class="text-lg font-black text-white">-</p>
+                </div>
+            </div>
+
+            <!-- Licencias Panel -->
+            <div class="glass rounded-2xl p-4 flex flex-col">
+                <!-- Header + Search -->
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        Gestión de Licencias
+                    </p>
+                    <button onclick="loadDashboard()" class="text-slate-400 hover:text-white transition-colors">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="relative mb-3">
+                    <i
+                        class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                    <input id="dashSearch" type="text" placeholder="Buscar por ID de dispositivo..."
+                        oninput="applyDashFilters()"
+                        class="w-full pl-9 pr-3 py-2.5 bg-slate-900/60 border border-slate-700/50 rounded-xl text-xs text-white placeholder-slate-500 font-bold focus:border-emerald-500/50 focus:outline-none transition-colors" />
+                </div>
+
+                <!-- Filter Chips -->
+                <div class="flex flex-wrap gap-1.5 mb-3">
+                    <!-- Estado -->
+                    <button onclick="toggleFilter(this, 'status', 'active')" data-active="false"
+                        class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-emerald-500/50">
+                        <i class="fa-solid fa-check mr-0.5"></i> Activa
+                    </button>
+                    <button onclick="toggleFilter(this, 'status', 'revoked')" data-active="false"
+                        class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-rose-500/50">
+                        <i class="fa-solid fa-xmark mr-0.5"></i> Revocada
+                    </button>
+                    <span class="w-px h-5 bg-slate-700/50 self-center mx-0.5"></span>
+                    <!-- Producto -->
+                    <button onclick="toggleFilter(this, 'product', 'tasas')" data-active="false"
+                        class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-yellow-500/50">
+                        <i class="fa-solid fa-chart-line mr-0.5"></i> Revendedor
+                    </button>
+                    <button onclick="toggleFilter(this, 'product', 'bodega')" data-active="false"
+                        class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-emerald-500/50">
+                        <i class="fa-solid fa-store mr-0.5"></i> Precios
+                    </button>
+                    <button onclick="toggleFilter(this, 'product', 'comida_rapida')" data-active="false"
+                        class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-orange-500/50">
+                        <i class="fa-solid fa-burger mr-0.5"></i> Comida
+                    </button>
+                    <span class="w-px h-5 bg-slate-700/50 self-center mx-0.5"></span>
+                    <!-- Tipo -->
+                    <button onclick="toggleFilter(this, 'type', 'permanent')" data-active="false"
+                        class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-sky-500/50">
+                        ∞ Perm
+                    </button>
+                    <button onclick="toggleFilter(this, 'type', 'demo7')" data-active="false"
+                        class="dash-filter-chip text-[9px] font-black uppercase px-2.5 py-1 rounded-full border transition-all bg-slate-800/50 text-slate-500 border-slate-700/40 hover:border-amber-500/50">
+                        7d
+                    </button>
+                </div>
+
+                <!-- License List -->
+                <div id="dashList" class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar max-h-[400px]">
+                    <div class="text-center py-10 text-slate-500">
+                        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i>
+                        <p class="text-xs">Cargando...</p>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div id="dashPagination"
+                    class="flex items-center justify-between mt-3 pt-3 border-t border-slate-800/50">
+                    <p id="dashCount" class="text-[9px] font-bold text-slate-500">0 resultados</p>
+                    <div class="flex items-center gap-1">
+                        <button onclick="dashChangePage(-1)" id="dashPrevBtn" disabled
+                            class="text-[9px] font-black text-slate-400 bg-slate-800/50 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed px-2 py-1 rounded transition-colors">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <span id="dashPageInfo" class="text-[9px] font-bold text-slate-500 px-2">1/1</span>
+                        <button onclick="dashChangePage(1)" id="dashNextBtn" disabled
+                            class="text-[9px] font-black text-slate-400 bg-slate-800/50 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed px-2 py-1 rounded transition-colors">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════
+             TAB: DEMOS
+        ════════════════════════════ -->
+        <div id="view_demos" class="hidden space-y-4">
+            <div class="glass rounded-2xl p-4 flex flex-col h-full max-h-[600px]">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        Demos Activos e Histórico
+                    </p>
+                    <button onclick="loadDashboard()" class="text-slate-400 hover:text-white transition-colors">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
+                </div>
+                
+                <div id="demosList" class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                    <div class="text-center py-10 text-slate-500">
+                        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i>
+                        <p class="text-xs">Cargando...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 px-4 py-2.5
+    bg-slate-800 text-white text-xs font-bold rounded-full
+    border border-slate-700 shadow-2xl opacity-0
+    translate-y-[-12px] transition-all duration-300
+    pointer-events-none z-50 flex items-center gap-2">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMsg">OK</span>
+    </div>
+
+    <script>
+        // ╔══════════════════════════════════════════════════════╗
+        //   ESTACIÓN MAESTRA — ÍNDICE DE SECCIONES
+        // ╠══════════════════════════════════════════════════════╣
+        //   §1  CONFIGURACIÓN CENTRAL  .............. L~530
+        //       · Supabase URL + anon key
+        //       · WhatsApp admin
+        //       · PRODUCTS (salts, prefijos, colores)
+        //
+        //   §2  AUTENTICACIÓN (PIN + BIOMÉTRICA) ... L~538
+        //       · hashPin(), enterPin(), deletePin()
+        //       · unlockApp(), tryBiometrics()
+        //
+        //   §3  GENERADOR DE LICENCIAS ............. L~690
+        //       · selectProduct(), setType()
+        //       · handleDeviceIdInput()
+        //       · generate() — SHA-256 + Supabase insert
+        //
+        //   §4  UTILIDADES UI ...................... L~867
+        //       · copyCode(), sendWhatsApp()
+        //       · addLog(), clearLog()
+        //       · showToast()
+        //
+        //   §5  TABS & DASHBOARD .................. L~977
+        //       · switchTab()
+        //       · dashFilters, applyDashFilters()
+        //       · renderFilteredLicenses(), renderLicenseCard()
+        //       · loadDashboard()
+        //
+        //   §6  REALTIME (Supabase Realtime) ....... L~1309
+        //       · startRealtimeSync(), stopRealtimeSync()
+        //
+        //   §7  ACCIONES DE LICENCIAS ............. L~1338
+        //       · revokeLicense(), reactivateLicense()
+        //       · deleteLicense(), editAlias()
+        //       · renewDemoLicense(), changeLicenseType()
+        //
+        //   §8  PWA / SERVICE WORKER .............. L~1507
+        //       · beforeinstallprompt handler
+        //       · showConfirmModal()
+        //       · registerServiceWorker()
+        // ╚══════════════════════════════════════════════════════╝
+
+        // ─────────────────────────────────────────────────────────
+        // §1  CONFIGURACIÓN CENTRAL — SOLO EDITAR AQUÍ
+        // ─────────────────────────────────────────────────────────
+
+        // PIN se valida via SHA-256 hash (PIN_HASH). No almacenar en texto plano.
+        const ADMIN_WA = '584124051793'   // Tu WhatsApp
+
+        const SUPABASE_URL = 'https://jjbzevntreoxpuofgkyi.supabase.co'
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqYnpldm50cmVveHB1b2Zna3lpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NjE4MDIsImV4cCI6MjA4NzAzNzgwMn0.wyyISEMsTEl__QgeckSVWgX1isif8iZOblO8GNso-TQ'  // anon key del proyecto
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+            // ─── FLUSH: Reintentar licencias pendientes que fallaron antes ───
+            ; (async () => {
+                const pending = JSON.parse(localStorage.getItem('pending_licenses') || '[]')
+                if (pending.length === 0) return
+                console.log(`[Licencia] ${pending.length} licencias pendientes encontradas. Reintentando...`)
+                const stillPending = []
+                for (const lic of pending) {
+                    const copy = { ...lic }
+                    delete copy.failed_at
+                    const { error } = await db.from('licenses').upsert(copy, { onConflict: 'device_id,product_id' })
+                    if (error) {
+                        console.warn('[Licencia] Falló reintento:', lic.device_id, error.message)
+                        stillPending.push(lic)
+                    } else {
+                        console.log('[Licencia] ✓ Pendiente guardada:', lic.device_id)
+                    }
+                }
+                if (stillPending.length > 0) {
+                    localStorage.setItem('pending_licenses', JSON.stringify(stillPending))
+                } else {
+                    localStorage.removeItem('pending_licenses')
+                }
+            })()
+
+        // ─────────────────────────────────────────────────────────
+        // §2  AUTENTICACIÓN — PIN + BIOMETRÍA
+        // ─────────────────────────────────────────────────────────
+        const PIN_HASH = '61b9237617f079e2241b2ffddec6a3bf5dd1b767ab8beab10d32050f651f0d1d';
+        let currentPin = '';
+
+        async function hashPin(pin) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(pin);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function updatePinDots() {
+            const dots = document.querySelectorAll('.pin-dot');
+            dots.forEach((dot, index) => {
+                if (index < currentPin.length) {
+                    dot.classList.remove('bg-slate-800', 'border-slate-700');
+                    dot.classList.add('bg-yellow-400', 'border-yellow-400', 'shadow-[0_0_10px_rgba(250,204,21,0.5)]');
+                } else {
+                    dot.classList.add('bg-slate-800', 'border-slate-700');
+                    dot.classList.remove('bg-yellow-400', 'border-yellow-400', 'shadow-[0_0_10px_rgba(250,204,21,0.5)]');
+                }
+            });
+        }
+
+        async function enterPin(num) {
+            if (currentPin.length >= 6) return;
+            currentPin += num;
+            updatePinDots();
+
+            document.getElementById('lockError').style.opacity = '0';
+
+            if (currentPin.length === 6) {
+                const hashed = await hashPin(currentPin);
+                if (hashed === PIN_HASH) {
+                    unlockApp();
+                } else {
+                    document.getElementById('pinDots').classList.add('shake');
+                    document.getElementById('lockError').style.opacity = '1';
+                    setTimeout(() => {
+                        document.getElementById('pinDots').classList.remove('shake');
+                        currentPin = '';
+                        updatePinDots();
+                    }, 400);
+                }
+            }
+        }
+
+        function deletePin() {
+            if (currentPin.length > 0) {
+                currentPin = currentPin.slice(0, -1);
+                updatePinDots();
+                document.getElementById('lockError').style.opacity = '0';
+            }
+        }
+
+        function unlockApp() {
+            document.getElementById('lockScreen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('lockScreen').style.display = 'none';
+                document.getElementById('mainScreen').classList.remove('hidden');
+
+                const urlParams = new URLSearchParams(window.location.search);
+                const deepTab = urlParams.get('tab');
+                if (deepTab) {
+                    try { switchTab(deepTab); } catch (e) { }
+                }
+            }, 300);
+        }
+
+        async function checkBiometricSupport() {
+            if (window.PublicKeyCredential &&
+                await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()) {
+                document.getElementById('bioBtn').style.display = 'block';
+                document.getElementById('bioPlaceholder').style.display = 'none';
+                tryBiometrics();
+            }
+        }
+
+        async function tryBiometrics() {
+            try {
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+
+                await navigator.credentials.create({
+                    publicKey: {
+                        challenge: challenge,
+                        rp: { name: "Estación Maestra", id: window.location.hostname || "localhost" },
+                        user: {
+                            id: new Uint8Array(16),
+                            name: "admin",
+                            displayName: "Administrador"
+                        },
+                        pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+                        authenticatorSelection: {
+                            authenticatorAttachment: "platform",
+                            userVerification: "required"
+                        },
+                        timeout: 60000
+                    }
+                });
+                unlockApp();
+            } catch (err) {
+                console.log("Biometría omitida o fallida:", err);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            checkBiometricSupport();
+        });
+
+        // ─────────────────────────────────────────────────────────
+        // §3a PRODUCTOS — salts y prefijos (¡NO CAMBIAR SALTS!)
+        // ─────────────────────────────────────────────────────────
+        // Claves DEBEN ser idénticas a cada app
+        const PRODUCTS = {
+            tasas: {
+                name: 'Revendedor Premium',
+                shortName: 'Revendedor',
+                icon: 'fa-chart-line',
+                color: '#fcd535',
+                salt: 'VENEZUELA_PRO_2026_GLOBAL',  // NO TOCAR — licencias TASAS-XXXX existentes
+                idPrefix: 'TASAS',
+                tokenKey: 'premium_token',
+            },
+            bodega: {
+                name: 'PreciosAlDía Bodega',
+                shortName: 'Bodega',
+                icon: 'fa-store',
+                color: '#10b981',
+                salt: 'PRECIOS_ALDIA_BODEGA_2026',  // NO TOCAR — licencias PDA-XXXX existentes
+                idPrefix: 'PDA',
+                tokenKey: 'pda_premium_token',
+            },
+            comida_rapida: {
+                name: 'Comida Rápida',
+                shortName: 'ComidaRápida',
+                icon: 'fa-burger',
+                color: '#ef4444',
+                salt: 'PRECIOS_ALDIA_COMIDA_RAPIDA_2026',
+                idPrefix: 'CRP',
+                tokenKey: 'crp_premium_token',
+            },
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // §3b ESTADO GLOBAL
+        // ─────────────────────────────────────────────────────────
+        let currentProduct = 'tasas'
+        let currentType = 'permanent'
+        let sessionLog = []
+        let lastGenerated = null
+
+        // ─────────────────────────────────────────────────────────
+        // §3c SELECCIÓN DE PRODUCTO
+        // ─────────────────────────────────────────────────────────
+        function selectProduct(id) {
+            currentProduct = id
+            const p = PRODUCTS[id]
+
+            // Actualizar botones de producto
+            Object.keys(PRODUCTS).forEach(k => {
+                const btn = document.getElementById(`btn_${k}`)
+                const prod = PRODUCTS[k]
+                if (k === id) {
+                    btn.className = btn.className
+                        .replace('border-slate-700 bg-slate-800/40 text-slate-400 hover:border-slate-500', '')
+                    btn.style.borderColor = prod.color
+                    btn.style.color = prod.color
+                    btn.style.backgroundColor = prod.color + '18'
+                } else {
+                    btn.style.borderColor = ''
+                    btn.style.color = ''
+                    btn.style.backgroundColor = ''
+                    btn.className = btn.className + ' border-slate-700 bg-slate-800/40 text-slate-400'
+                }
+            })
+
+            // Actualizar header
+            document.getElementById('productIcon').innerHTML =
+                `<i class="fa-solid ${p.icon}"></i>`
+            document.getElementById('productIcon').style.color = p.color
+            document.getElementById('productIcon').style.borderColor = p.color + '40'
+            document.getElementById('productIcon').style.backgroundColor = p.color + '15'
+            document.getElementById('productTitle').innerText = p.name
+            document.getElementById('productSub').innerText = `${p.idPrefix}-XXXX · Key Generator`
+
+            // Actualizar placeholder
+            document.getElementById('devId').placeholder =
+                `${p.idPrefix}-XXXX`
+
+            // Limpiar resultado
+            document.getElementById('resultContainer').classList.add('hidden')
+            document.getElementById('resultContainer').classList.remove('fade-in')
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // §3d TIPO DE LICENCIA
+        // ─────────────────────────────────────────────────────────
+        function setType(type) {
+            currentType = type
+            const types = ['permanent', 'demo7']
+            types.forEach(t => {
+                const btn = document.getElementById(`type_${t}`)
+                if (t === type) {
+                    btn.style.backgroundColor = PRODUCTS[currentProduct].color
+                    btn.style.color = '#0f172a'
+                    btn.style.borderColor = 'transparent'
+                } else {
+                    btn.style.backgroundColor = ''
+                    btn.style.color = ''
+                    btn.style.borderColor = ''
+                }
+            })
+
+            const note = document.getElementById('expiryNote')
+            const noteText = document.getElementById('expiryText')
+            if (type === 'permanent') {
+                note.classList.add('hidden')
+            } else {
+                note.classList.remove('hidden')
+                note.classList.add('flex')
+                noteText.innerText = 'Licencia temporal — expira en 7 días'
+            }
+
+            document.getElementById('resultContainer').classList.add('hidden')
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // §3e AUTODETECT PRODUCTO DESDE PREFIJO DEL ID
+        // ─────────────────────────────────────────────────────────
+        function handleDeviceIdInput(val) {
+            const v = val.trim().toUpperCase()
+            if (v.startsWith('TAS') && currentProduct !== 'tasas') {
+                selectProduct('tasas')
+            } else if (v.startsWith('CRP') && currentProduct !== 'comida_rapida') {
+                selectProduct('comida_rapida')
+            } else if (v.startsWith('PDA') && currentProduct !== 'bodega') {
+                selectProduct('bodega')
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // §3f GENERADOR DE CÓDIGO — SHA-256
+        // ─────────────────────────────────────────────────────────
+        document.getElementById('devId')
+            .addEventListener('keypress', e => {
+                if (e.key === 'Enter') generate()
+            })
+
+        async function generate() {
+            const devId = document.getElementById('devId').value.trim().toUpperCase()
+            if (!devId) {
+                showToast('Introduce el ID del dispositivo', 'error')
+                document.getElementById('devId').focus()
+                return
+            }
+
+            const p = PRODUCTS[currentProduct]
+
+            try {
+                const encoder = new TextEncoder()
+                const data = encoder.encode(devId + p.salt)
+                const hash = await crypto.subtle.digest('SHA-256', data)
+                const hex = Array.from(new Uint8Array(hash))
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('').toUpperCase()
+
+                const code = `ACTIV-${hex.slice(0, 4)}-${hex.slice(4, 8)}`
+
+                // Calcular expiración
+                let expiresAt = null
+                let expiresText = null
+                const days = currentType === 'demo7' ? 7 : 0
+                if (days > 0) {
+                    expiresAt = Date.now() + days * 24 * 60 * 60 * 1000
+                    expiresText = `Expira el ${new Date(expiresAt)
+                        .toLocaleDateString('es-VE', {
+                            day: '2-digit', month: 'long', year: 'numeric'
+                        })}`
+                }
+
+                lastGenerated = {
+                    code, devId, expiresAt, expiresText,
+                    product: currentProduct,
+                    type: currentType,
+                }
+
+                // Mostrar resultado
+                document.getElementById('resultText').innerText = code
+                document.getElementById('typeBadge').innerText =
+                    currentType === 'permanent' ? 'Permanente' : '7 días'
+                document.getElementById('deviceInfo').innerText = devId
+                document.getElementById('productInfo').innerText = p.shortName
+
+                const expEl = document.getElementById('expiryResult')
+                if (expiresText) {
+                    expEl.innerText = expiresText
+                    expEl.classList.remove('hidden')
+                } else {
+                    expEl.classList.add('hidden')
+                }
+
+                const container = document.getElementById('resultContainer')
+                container.classList.remove('hidden', 'fade-in')
+                void container.offsetWidth
+                container.classList.add('fade-in')
+
+                addToLog(devId, code, currentType, expiresText, p.shortName)
+
+                // Guardar en Supabase (con retry y fallback)
+                const licensePayload = {
+                    device_id: devId,
+                    product_id: currentProduct,
+                    type: currentType,
+                    active: true,
+                    expires_at: expiresAt
+                        ? new Date(expiresAt).toISOString()
+                        : null,
+                    code: code,
+                }
+
+                const saveLicense = async (payload, attempt = 1) => {
+                    try {
+                        const { error } = await db.from('licenses').upsert(payload, { onConflict: 'device_id,product_id' })
+                        if (error) {
+                            console.error(`[Licencia] Error guardando (intento ${attempt}):`, error.message)
+                            if (attempt < 3) {
+                                showToast(`⚠️ Reintentando guardar licencia... (${attempt}/3)`, 'warning')
+                                setTimeout(() => saveLicense(payload, attempt + 1), 3000)
+                            } else {
+                                showToast('❌ ERROR: Licencia NO guardada en servidor. Guardada localmente para reintento.', 'error')
+                                // Guardar en cola pendiente para reintentar después
+                                const pending = JSON.parse(localStorage.getItem('pending_licenses') || '[]')
+                                pending.push({ ...payload, failed_at: new Date().toISOString() })
+                                localStorage.setItem('pending_licenses', JSON.stringify(pending))
+                            }
+                        } else {
+                            showToast('Licencia registrada en sistema ✓')
+                        }
+                    } catch (e) {
+                        console.error('[Licencia] Error de red:', e)
+                        if (attempt < 3) {
+                            setTimeout(() => saveLicense(payload, attempt + 1), 3000)
+                        } else {
+                            showToast('❌ Sin conexión. Licencia guardada localmente para reintento.', 'error')
+                            const pending = JSON.parse(localStorage.getItem('pending_licenses') || '[]')
+                            pending.push({ ...payload, failed_at: new Date().toISOString() })
+                            localStorage.setItem('pending_licenses', JSON.stringify(pending))
+                        }
+                    }
+                }
+
+                saveLicense(licensePayload)
+
+            } catch (err) {
+                console.error(err)
+                showToast('Error generando código', 'error')
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // §4a UTILIDADES — COPIAR AL PORTAPAPELES
+        // ─────────────────────────────────────────────────────────
+        function copyCode() {
+            const text = document.getElementById('resultText').innerText
+            if (!text) return
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Código copiado')
+                const icon = document.getElementById('copyIcon')
+                icon.className = 'fa-solid fa-check text-sm'
+                setTimeout(() => {
+                    icon.className = 'fa-regular fa-copy text-sm'
+                }, 2000)
+            }).catch(() => {
+                showToast('Error al copiar — copie manualmente', 'error')
+            })
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // §4b UTILIDADES — ENVIAR POR WHATSAPP
+        // ─────────────────────────────────────────────────────────
+        function sendWhatsApp() {
+            if (!lastGenerated) return
+            const { code, devId, type, expiresText, product } = lastGenerated
+            const p = PRODUCTS[product]
+            const tipoLabel = type === 'permanent' ? 'Licencia Permanente' : 'Licencia 7 días'
+
+            const lines = [
+                `*${p.name}*`,
+                `━━━━━━━━━━━━━━━━━━`,
+                `Tipo: ${tipoLabel}`,
+                `Dispositivo: ${devId}`,
+                `Codigo: *${code}*`,
+                expiresText || null,
+                `━━━━━━━━━━━━━━━━━━`,
+                `Ingresa el codigo en la app:`,
+                `Configuracion > Activar Licencia`,
+            ].filter(Boolean).join('\n')
+
+            window.open(
+                `https://wa.me/?text=${encodeURIComponent(lines)}`,
+                '_blank'
+            )
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // §4c UTILIDADES — LOG DE SESIÓN
+        // ─────────────────────────────────────────────────────────
+        function addToLog(devId, code, type, expiresText, productName) {
+            sessionLog.unshift({ devId, code, type, expiresText, productName })
+            const section = document.getElementById('logSection')
+            const list = document.getElementById('logList')
+            section.classList.remove('hidden')
+            list.innerHTML = sessionLog.slice(0, 15).map((e, i) => `
+        <div class="flex items-center justify-between gap-2 px-3 py-2
+          bg-slate-900/50 rounded-xl border border-slate-800/40">
+            <div class="min-w-0">
+                <p class="text-[10px] font-mono font-black
+                  text-slate-300 truncate">
+                  ${e.devId}
+                  <span class="text-[8px] text-slate-600
+                    font-bold ml-1 uppercase">${e.productName}</span>
+                </p>
+                <p class="text-[9px] text-slate-600 font-bold
+                  font-mono mt-0.5">
+                  ${e.code}
+                  <span class="normal-case ml-1">
+                    ${e.type !== 'permanent'
+                    ? '· ' + (e.expiresText || '')
+                    : '· Permanente'}
+                  </span>
+                </p>
+            </div>
+            <button onclick="navigator.clipboard.writeText('${e.code}')
+              .then(()=>showToast('Copiado'))"
+              class="shrink-0 text-slate-600 hover:text-emerald-400
+                transition-colors p-1.5 rounded-lg hover:bg-slate-800">
+                <i class="fa-regular fa-copy text-xs"></i>
+            </button>
+        </div>
+    `).join('')
+        }
+
+        function clearLog() {
+            sessionLog = []
+            document.getElementById('logSection').classList.add('hidden')
+            document.getElementById('logList').innerHTML = ''
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // §4d UTILIDADES — TOAST NOTIFICATIONS
+        // ─────────────────────────────────────────────────────────
+        let toastTimer
+        function showToast(msg, type = 'success') {
+            const el = document.getElementById('toast')
+            const icon = document.getElementById('toastIcon')
+            const text = document.getElementById('toastMsg')
+            text.innerText = msg
+            icon.className = type === 'error'
+                ? 'fa-solid fa-triangle-exclamation text-rose-400'
+                : 'fa-solid fa-circle-check text-emerald-400'
+            el.style.opacity = '1'
+            el.style.transform = 'translate(-50%, 0)'
+            clearTimeout(toastTimer)
+            toastTimer = setTimeout(() => {
+                el.style.opacity = '0'
+                el.style.transform = 'translate(-50%, -12px)'
+            }, 3000)
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // §5  TABS Y DASHBOARD
+        // ─────────────────────────────────────────────────────────
+        function switchTab(tabId) {
+            document.getElementById('view_gen').classList.add('hidden')
+            document.getElementById('view_dash').classList.add('hidden')
+            document.getElementById('view_demos').classList.add('hidden')
+
+            document.getElementById('tab_gen').className = 'flex-1 py-2 text-xs font-black uppercase text-slate-400 hover:text-white transition-all active:scale-95'
+            document.getElementById('tab_dash').className = 'flex-1 py-2 text-xs font-black uppercase text-slate-400 hover:text-white transition-all active:scale-95'
+            document.getElementById('tab_demos').className = 'flex-1 py-2 text-xs font-black uppercase text-slate-400 hover:text-white transition-all active:scale-95'
+
+            document.getElementById(`view_${tabId}`).classList.remove('hidden')
+            document.getElementById(`view_${tabId}`).classList.add('fade-in')
+
+            const activeTab = document.getElementById(`tab_${tabId}`)
+            activeTab.className = 'flex-1 py-2 text-xs font-black uppercase text-slate-900 bg-yellow-400 rounded-lg transition-all active:scale-95'
+
+            if (tabId === 'dash' || tabId === 'demos') {
+                loadDashboard();
+                startRealtimeSync(); 
+                if (tabId === 'dash') {
+                    // Visually activate the 'Activa' chip to match default filter state
+                    setTimeout(() => {
+                        const activeChip = document.querySelector('[onclick*="status\', \'active"]');
+                        if (activeChip && activeChip.dataset.active !== 'true') {
+                            activeChip.dataset.active = 'true';
+                            activeChip.classList.remove('bg-slate-800/50', 'text-slate-500', 'border-slate-700/40');
+                            activeChip.classList.add('bg-emerald-900/40', 'text-emerald-400', 'border-emerald-500/30');
+                        }
+                    }, 0);
+                }
+            } else {
+                stopRealtimeSync(); 
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────
+        // §5a DASHBOARD — Estado de Filtros y Paginación
+        // ─────────────────────────────────────────────────────────
+        let allLicenses = [];
+        let allDemos = [];
+        let dashFilters = { status: ['active'], product: [], type: [] }; // default: show only active
+        let dashCurrentPage = 1;
+        const DASH_PAGE_SIZE = 10;
+
+        function toggleFilter(btn, category, value) {
+            const isActive = btn.dataset.active === 'true';
+            btn.dataset.active = isActive ? 'false' : 'true';
+
+            if (isActive) {
+                btn.classList.remove('bg-emerald-900/40', 'text-emerald-400', 'border-emerald-500/30',
+                    'bg-rose-900/40', 'text-rose-400', 'border-rose-500/30',
+                    'bg-yellow-900/40', 'text-yellow-400', 'border-yellow-500/30',
+                    'bg-sky-900/40', 'text-sky-400', 'border-sky-500/30',
+                    'bg-amber-900/40', 'text-amber-400', 'border-amber-500/30');
+                btn.classList.add('bg-slate-800/50', 'text-slate-500', 'border-slate-700/40');
+                dashFilters[category] = dashFilters[category].filter(v => v !== value);
+            } else {
+                btn.classList.remove('bg-slate-800/50', 'text-slate-500', 'border-slate-700/40');
+                const colorMap = {
+                    'status-active': ['bg-emerald-900/40', 'text-emerald-400', 'border-emerald-500/30'],
+                    'status-revoked': ['bg-rose-900/40', 'text-rose-400', 'border-rose-500/30'],
+                    'product-tasas': ['bg-yellow-900/40', 'text-yellow-400', 'border-yellow-500/30'],
+                    'product-bodega': ['bg-emerald-900/40', 'text-emerald-400', 'border-emerald-500/30'],
+                    'type-permanent': ['bg-sky-900/40', 'text-sky-400', 'border-sky-500/30'],
+                    'type-demo7': ['bg-amber-900/40', 'text-amber-400', 'border-amber-500/30'],
+                    'type-demo30': ['bg-amber-900/40', 'text-amber-400', 'border-amber-500/30'],
+                };
+                const classes = colorMap[`${category}-${value}`] || ['bg-slate-600', 'text-white', 'border-slate-500'];
+                btn.classList.add(...classes);
+                dashFilters[category].push(value);
+            }
+
+            dashCurrentPage = 1;
+            applyDashFilters();
+        }
+
+        function applyDashFilters() {
+            const searchTerm = (document.getElementById('dashSearch')?.value || '').trim().toUpperCase();
+            let filtered = [...allLicenses];
+
+            // Search
+            if (searchTerm) {
+                filtered = filtered.filter(l => l.device_id.toUpperCase().includes(searchTerm));
+            }
+
+            // Status filter
+            if (dashFilters.status.length > 0) {
+                filtered = filtered.filter(l => {
+                    if (dashFilters.status.includes('active') && l.active) return true;
+                    if (dashFilters.status.includes('revoked') && !l.active) return true;
+                    return false;
+                });
+            }
+
+            // Product filter
+            if (dashFilters.product.length > 0) {
+                filtered = filtered.filter(l => dashFilters.product.includes(l.product_id));
+            }
+
+            // Type filter
+            if (dashFilters.type.length > 0) {
+                filtered = filtered.filter(l => dashFilters.type.includes(l.type));
+            }
+
+            renderFilteredLicenses(filtered);
+        }
+
+        function renderFilteredLicenses(filtered) {
+            const listEl = document.getElementById('dashList');
+            const totalPages = Math.max(1, Math.ceil(filtered.length / DASH_PAGE_SIZE));
+            if (dashCurrentPage > totalPages) dashCurrentPage = totalPages;
+
+            const start = (dashCurrentPage - 1) * DASH_PAGE_SIZE;
+            const pageItems = filtered.slice(start, start + DASH_PAGE_SIZE);
+
+            // Count
+            document.getElementById('dashCount').textContent = `${filtered.length} resultado${filtered.length !== 1 ? 's' : ''}`;
+            document.getElementById('dashPageInfo').textContent = `${dashCurrentPage}/${totalPages}`;
+            document.getElementById('dashPrevBtn').disabled = dashCurrentPage <= 1;
+            document.getElementById('dashNextBtn').disabled = dashCurrentPage >= totalPages;
+
+            if (pageItems.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-10 text-slate-500">
+                        <i class="fa-solid fa-filter-circle-xmark text-2xl mb-2 opacity-50"></i>
+                        <p class="text-xs">Sin resultados con estos filtros</p>
+                    </div>`;
+                return;
+            }
+
+            listEl.innerHTML = pageItems.map(l => renderLicenseCard(l)).join('');
+        }
+
+        function timeAgo(dateStr) {
+            if (!dateStr) return 'Nunca';
+            const diff = Date.now() - new Date(dateStr).getTime();
+            const mins = Math.floor(diff / 60000);
+            const hrs = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            if (mins < 2) return 'Ahora mismo';
+            if (mins < 60) return `hace ${mins}m`;
+            if (hrs < 24) return `hace ${hrs}h`;
+            if (days < 30) return `hace ${days}d`;
+            return `hace +30d`;
+        }
+
+        function renderLicenseCard(l) {
+            const isTypePerm = l.type === 'permanent';
+            const labelTipo = isTypePerm ? 'PERMANENTE' : '7 DÍAS';
+
+            const badgeClass = l.active
+                ? 'bg-emerald-900/40 text-emerald-400 border-emerald-500/20'
+                : 'bg-rose-900/40 text-rose-400 border-rose-500/20';
+            const badgeIcon = l.active ? 'fa-check' : 'fa-xmark';
+            const badgeText = l.active ? 'Activa' : 'Revocada';
+
+            const prodColor = l.apps?.color || '#94a3b8';
+            const prodName = l.apps?.short_name || l.product_id;
+
+            const isExpiredDemo = l.type === 'demo7' && new Date(l.expires_at) <= new Date();
+
+            // ── Last Seen Status ──────────────────────────────────
+            const lastSeen = l.last_seen_at;
+            const diffHrs = lastSeen ? (Date.now() - new Date(lastSeen).getTime()) / 3600000 : 9999;
+            let pulseColor, pulseAnim, onlineLabel;
+            if (!lastSeen) {
+                pulseColor = 'bg-slate-600'; pulseAnim = ''; onlineLabel = 'Sin actividad';
+            } else if (diffHrs < 4) {
+                pulseColor = 'bg-emerald-400'; pulseAnim = 'animate-pulse'; onlineLabel = 'En línea';
+            } else if (diffHrs < 24) {
+                pulseColor = 'bg-amber-400'; pulseAnim = ''; onlineLabel = 'Reciente';
+            } else {
+                pulseColor = 'bg-slate-500'; pulseAnim = ''; onlineLabel = 'Inactivo';
+            }
+            const lastSeenText = timeAgo(lastSeen);
+
+            // ── IP Badge ─────────────────────────────────────────
+            const ipBadge = l.ip_address
+                ? `<span class="flex items-center gap-1"><i class="fa-solid fa-location-dot text-[8px]"></i>${l.ip_address}</span>`
+                : '';
+
+            const actionBtns = l.active ? `
+                <button onclick="revokeLicense('${l.id}')" class="shrink-0 text-[9px] font-black text-rose-400 bg-rose-400/10 hover:bg-rose-400 hover:text-white px-2 py-1 rounded transition-colors uppercase border border-rose-400/20">
+                    Revocar
+                </button>
+            ` : `
+                <div class="flex gap-1">
+                    ${isExpiredDemo ? `
+                    <button onclick="renewDemoLicense('${l.id}')" class="shrink-0 text-[9px] font-black text-amber-400 bg-amber-400/10 hover:bg-amber-400 hover:text-white px-2 py-1 rounded transition-colors uppercase border border-amber-400/20" title="Dar 7 días más">
+                        +7 Días
+                    </button>
+                    ` : `
+                    <button onclick="reactivateLicense('${l.id}')" class="shrink-0 text-[9px] font-black text-emerald-400 bg-emerald-400/10 hover:bg-emerald-400 hover:text-white px-2 py-1 rounded transition-colors uppercase border border-emerald-400/20">
+                        Reactivar
+                    </button>
+                    `}
+                    <button onclick="deleteLicense('${l.id}', '${l.device_id}')" class="shrink-0 text-[9px] font-black text-rose-400 bg-rose-400/10 hover:bg-rose-400 hover:text-white px-2 py-1 rounded transition-colors uppercase border border-rose-400/20">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            `;
+
+            return `
+            <div class="bg-slate-900/40 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                            <h3 class="font-mono text-sm font-black text-white leading-none flex items-center gap-2">
+                                <span>${l.alias || l.device_id}</span>
+                                ${l.alias ? `<span class="text-[10px] font-normal text-slate-500">(${l.device_id})</span>` : ''}
+                                <button onclick="editAlias('${l.id}')" class="text-slate-500 hover:text-emerald-400 transition-colors cursor-pointer" title="Renombrar equipo">
+                                    <i class="fa-solid fa-pen text-[10px]"></i>
+                                </button>
+                            </h3>
+                            <div class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ${badgeClass}">
+                                <i class="fa-solid ${badgeIcon} mr-0.5"></i> ${badgeText}
+                            </div>
+                        </div>
+                        <p class="text-[10px] font-bold uppercase" style="color: ${prodColor}">${prodName}</p>
+                    </div>
+                    ${actionBtns}
+                </div>
+
+                <!-- Last Seen Bar -->
+                <div class="flex items-center gap-2 bg-slate-950/50 rounded-lg px-2.5 py-1.5 border border-slate-800/60">
+                    <span class="relative flex h-2 w-2 shrink-0">
+                        <span class="absolute inline-flex h-full w-full rounded-full opacity-75 ${pulseColor} ${pulseAnim}"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 ${pulseColor}"></span>
+                    </span>
+                    <span class="text-[9px] font-black uppercase tracking-wider" style="color: ${diffHrs < 4 ? '#34d399' : diffHrs < 24 ? '#fbbf24' : '#64748b'}">${onlineLabel}</span>
+                    <span class="text-[9px] text-slate-500 font-bold ml-auto">${lastSeenText}</span>
+                    ${ipBadge ? `<span class="text-[9px] text-slate-600 font-mono ml-1">${l.ip_address}</span>` : ''}
+                </div>
+
+                <div class="flex items-center gap-3 text-[9px] text-slate-500 font-bold border-t border-slate-800/50 pt-2 mt-1">
+                    <button onclick="changeLicenseType('${l.id}', '${l.type}', '${l.device_id}')" class="hover:text-yellow-400 transition-colors cursor-pointer flex items-center gap-1 bg-slate-800/50 px-2 py-0.5 rounded border border-slate-700/50 hover:border-yellow-400/50 active:scale-95">
+                        <i class="fa-solid fa-tag"></i> ${labelTipo}
+                    </button>
+                    <span class="flex items-center gap-1"><i class="fa-regular fa-calendar"></i> ${new Date(l.created_at).toLocaleDateString('es-VE')}</span>
+                </div>
+            </div>`;
+        }
+
+
+        function dashChangePage(delta) {
+            dashCurrentPage += delta;
+            applyDashFilters();
+        }
+
+        function renderDemosView() {
+            const listEl = document.getElementById('demosList');
+            if (!listEl) return;
+
+            if (!allDemos || allDemos.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-10 text-slate-500">
+                        <i class="fa-solid fa-ghost text-2xl mb-2 opacity-50"></i>
+                        <p class="text-xs">No hay demos registrados</p>
+                    </div>`;
+                return;
+            }
+
+            // Verify if it was made permanent
+            const isPermanent = (d) => allLicenses.some(l => 
+                l.device_id === d.device_id && l.product_id === d.product_id && l.type === 'permanent'
+            );
+
+            // Sort demos: Active first (closest to expire at top), then expired (most recently expired at top)
+            const sortedDemos = [...allDemos].sort((a, b) => {
+                const now = new Date();
+                const expA = new Date(a.expires_at);
+                const expB = new Date(b.expires_at);
+                const aActive = expA > now && !isPermanent(a);
+                const bActive = expB > now && !isPermanent(b);
+
+                if (aActive && !bActive) return -1;
+                if (!aActive && bActive) return 1;
+                
+                if (aActive && bActive) {
+                    return expA - expB; // Expiran pronto primero
+                } else {
+                    return expB - expA; // Expiraron recientemente primero
+                }
+            });
+
+            listEl.innerHTML = sortedDemos.map(d => {
+                const now = new Date();
+                const expiresAt = new Date(d.expires_at);
+                const isActive = expiresAt > now;
+                const madePermanent = isPermanent(d);
+                
+                let timeStr, badgeClass, badgeText, badgeIcon;
+                
+                if (madePermanent) {
+                    badgeClass = 'bg-sky-900/40 text-sky-400 border-sky-500/20';
+                    badgeIcon = 'fa-infinity';
+                    badgeText = 'Permanente';
+                    timeStr = 'Convertido a pago';
+                } else if (isActive) {
+                    badgeClass = 'bg-amber-900/40 text-amber-400 border-amber-500/20';
+                    badgeIcon = 'fa-clock';
+                    badgeText = 'Activo';
+                    
+                    const diffMs = expiresAt - now;
+                    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    timeStr = `Quedan ${days}d ${hours}h`;
+                } else {
+                    badgeClass = 'bg-rose-900/40 text-rose-400 border-rose-500/20';
+                    badgeIcon = 'fa-xmark';
+                    badgeText = 'Vencido';
+                    
+                    const diffMs = now - expiresAt;
+                    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                    timeStr = `Venció hace ${days}d`;
+                }
+
+                const prodColor = PRODUCTS[d.product_id]?.color || '#94a3b8';
+                const prodName = PRODUCTS[d.product_id]?.shortName || d.product_id;
+
+                const deleteBtn = (!isActive && !madePermanent) ? `
+                    <button onclick="deleteDemo('${d.device_id}', '${d.product_id}')" 
+                        class="ml-auto px-2 py-1 rounded-lg text-[9px] font-black uppercase 
+                        bg-rose-900/30 text-rose-400 border border-rose-500/20 
+                        hover:bg-rose-800/50 hover:border-rose-400/40 
+                        active:scale-95 transition-all cursor-pointer">
+                        <i class="fa-solid fa-trash-can mr-0.5"></i> Eliminar
+                    </button>` : '';
+
+                return `
+                <div class="bg-slate-900/40 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                                <h3 class="font-mono text-sm font-black text-white leading-none">
+                                    ${d.device_id}
+                                </h3>
+                                <div class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ${badgeClass}">
+                                    <i class="fa-solid ${badgeIcon} mr-0.5"></i> ${badgeText}
+                                </div>
+                            </div>
+                            <p class="text-[10px] font-bold uppercase" style="color: ${prodColor}">${prodName}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-2 bg-slate-950/50 rounded-lg px-2.5 py-1.5 border border-slate-800/60 mt-1">
+                        <i class="fa-regular fa-clock text-slate-500 text-[10px]"></i>
+                        <span class="text-[10px] font-bold ${isActive && !madePermanent ? 'text-amber-400' : 'text-slate-500'}">${timeStr}</span>
+                        ${deleteBtn}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        window.deleteDemo = async function(deviceId, productId) {
+            const prodName = PRODUCTS[productId]?.shortName || productId;
+            const confirmed = await showConfirmModal(
+                'Eliminar Demo',
+                `¿Seguro que quieres eliminar este demo vencido?<br><br>Dispositivo: <b>${deviceId}</b><br>Producto: <b>${prodName}</b>`,
+                'Eliminar',
+                'Cancelar'
+            );
+            if (!confirmed) return;
+
+            try {
+                const { error } = await db
+                    .from('demos')
+                    .delete()
+                    .eq('device_id', deviceId)
+                    .eq('product_id', productId);
+
+                if (error) throw error;
+
+                showToast('Demo eliminado correctamente', 'success');
+                await loadDashboard();
+            } catch (err) {
+                console.error('Error deleting demo:', err);
+                showToast('Error al eliminar demo', 'error');
+            }
+        }
+
+        async function loadDashboard() {
+            const listEl = document.getElementById('dashList')
+            listEl.innerHTML = `
+                <div class="text-center py-10 text-slate-500">
+                    <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i>
+                    <p class="text-xs">Cargando...</p>
+                </div>
+            `
+
+            try {
+                // Get ALL licenses (no limit for full filtering)
+                const { data: licenseData, error } = await db
+                    .from('licenses')
+                    .select('*, apps(name, color, short_name)')
+                    .order('created_at', { ascending: false })
+
+                if (error) throw error
+
+                allLicenses = licenseData || [];
+
+                // Get demos
+                const { data: demoData } = await db
+                    .from('demos')
+                    .select('device_id, product_id, expires_at, activated_at, app_version')
+                    .order('activated_at', { ascending: false })
+
+                allDemos = demoData || [];
+
+                // Demo stats helpers
+                const isPermanent = (d) => allLicenses.some(l =>
+                    l.device_id === d.device_id &&
+                    l.product_id === d.product_id &&
+                    l.type === 'permanent'
+                );
+
+                const demosActivas = (pid) =>
+                    allDemos.filter(d =>
+                        d.product_id === pid &&
+                        new Date(d.expires_at) > new Date() &&
+                        !isPermanent(d)
+                    ).length;
+
+                const demosExpiradas = (pid) =>
+                    allDemos.filter(d =>
+                        d.product_id === pid &&
+                        new Date(d.expires_at) <= new Date() &&
+                        !isPermanent(d)
+                    ).length;
+
+                // Update Stats
+                const tasasCount = allLicenses.filter(l => l.product_id === 'tasas').length
+                const bodegaCount = allLicenses.filter(l => l.product_id === 'bodega').length
+                const comidaCount = allLicenses.filter(l => l.product_id === 'comida_rapida').length
+
+                document.getElementById('stats_tasas').innerHTML = `
+                    <span class="text-lg font-black text-white">${tasasCount}</span>
+                    <span class="text-[9px] text-yellow-400 font-bold block mt-0.5">
+                        ${demosActivas('tasas')} demos activas
+                    </span>
+                    <span class="text-[9px] text-slate-600 font-bold block">
+                        ${demosExpiradas('tasas')} expiradas
+                    </span>`
+
+                document.getElementById('stats_bodega').innerHTML = `
+                    <span class="text-lg font-black text-white">${bodegaCount}</span>
+                    <span class="text-[9px] text-emerald-400 font-bold block mt-0.5">
+                        ${demosActivas('bodega')} demos activas
+                    </span>
+                    <span class="text-[9px] text-slate-600 font-bold block">
+                        ${demosExpiradas('bodega')} expiradas
+                    </span>`
+
+                document.getElementById('stats_comida').innerHTML = `
+                    <span class="text-lg font-black text-white">${comidaCount}</span>
+                    <span class="text-[9px] text-orange-400 font-bold block mt-0.5">
+                        ${demosActivas('comida_rapida')} demos activas
+                    </span>
+                    <span class="text-[9px] text-slate-600 font-bold block">
+                        ${demosExpiradas('comida_rapida')} expiradas
+                    </span>`
+
+                // Apply current filters
+                applyDashFilters();
+                
+                // Render Demos View
+                renderDemosView();
+
+            } catch (err) {
+                console.error(err)
+                listEl.innerHTML = `
+                    <div class="text-center py-10 text-rose-400">
+                        <i class="fa-solid fa-triangle-exclamation text-2xl mb-2"></i>
+                        <p class="text-xs">Error al cargar dashboard</p>
+                    </div>
+                `
+            }
+        }
+
+        // ═══════════════════════════════════════════
+        // REALTIME — auto-refresh dashboard on license changes
+        // ═══════════════════════════════════════════
+        let realtimeChannel = null;
+
+        function startRealtimeSync() {
+            if (realtimeChannel) return; // already subscribed
+            realtimeChannel = db
+                .channel('licenses-changes')
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'licenses' },
+                    () => {
+                        // Only refresh if the dashboard or demos tab is visible
+                        if (!document.getElementById('view_dash').classList.contains('hidden') || !document.getElementById('view_demos').classList.contains('hidden')) {
+                            loadDashboard();
+                        }
+                    }
+                )
+                .subscribe();
+        }
+
+        function stopRealtimeSync() {
+            if (realtimeChannel) {
+                db.removeChannel(realtimeChannel);
+                realtimeChannel = null;
+            }
+        }
+
+
+        async function revokeLicense(id) {
+            const confirmed = await showConfirmModal(
+                'Revocar Licencia',
+                'Esta acción desactivará la licencia del dispositivo asociado. El cliente perderá acceso en su próxima verificación.',
+                'Confirmar Revocación',
+                'Cancelar'
+            )
+            if (!confirmed) return;
+
+            try {
+                showToast('Procesando revocación...', 'success')
+                const { error } = await db.from('licenses')
+                    .update({ active: false })
+                    .eq('id', id);
+
+                if (error) throw error;
+                showToast('Licencia revocada exitosamente', 'success')
+                loadDashboard()
+            } catch (err) {
+                console.error(err);
+                showToast('Error al procesar la revocación', 'error')
+            }
+        }
+
+        async function reactivateLicense(id) {
+            const confirmed = await showConfirmModal(
+                'Reactivar Licencia',
+                '¿Deseas reactivar esta licencia? El cliente podrá usar la app de nuevo.',
+                'Reactivar',
+                'Cancelar'
+            )
+            if (!confirmed) return;
+
+            try {
+                showToast('Reactivando...', 'success')
+                const { error } = await db.from('licenses')
+                    .update({ active: true })
+                    .eq('id', id);
+
+                if (error) throw error;
+                showToast('Licencia reactivada ✓', 'success')
+                loadDashboard()
+            } catch (err) {
+                console.error(err);
+                showToast('Error al reactivar', 'error')
+            }
+        }
+
+        async function editAlias(id) {
+            const license = allLicenses.find(l => l.id === id);
+            if (!license) return;
+            const newAlias = prompt(`Asignar nombre al equipo ${license.device_id}:\n(Ejemplo: "Laptop de Juan". Déjalo en vacío para borrar)`, license.alias || '');
+            if (newAlias === null) return; // User cancelled
+
+            try {
+                showToast('Guardando nombre...', 'success');
+                const { error } = await db.from('licenses')
+                    .update({ alias: newAlias.trim() || null })
+                    .eq('id', id);
+
+                if (error) throw error;
+                showToast('Nombre guardado ✓', 'success');
+                loadDashboard();
+            } catch (err) {
+                console.error(err);
+                showToast('Error al guardar', 'error');
+            }
+        }
+
+        async function renewDemoLicense(id) {
+            const confirmed = await showConfirmModal(
+                'Renovar Demo 7 Días',
+                '¿Deseas reactivar esta demo y darle 7 días más de prueba a partir de este momento?',
+                'Sí, renovar',
+                'Cancelar'
+            )
+            if (!confirmed) return;
+
+            try {
+                showToast('Renovando Demo...', 'success')
+
+                // Calculate new expiration date (current time + 7 days)
+                const newExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+                const { error } = await db.from('licenses')
+                    .update({
+                        active: true,
+                        expires_at: newExpiresAt
+                    })
+                    .eq('id', id);
+
+                if (error) throw error;
+                showToast('Demo renovada por 7 días ✓', 'success')
+                loadDashboard()
+            } catch (err) {
+                console.error(err);
+                showToast('Error al renovar demo', 'error')
+            }
+        }
+
+        async function changeLicenseType(id, currentType, deviceId) {
+            const newType = currentType === 'permanent' ? 'demo7' : 'permanent';
+            const actionText = newType === 'demo7' ? '7 Días' : 'Permanente';
+
+            const confirmed = await showConfirmModal(
+                'Cambiar Tipo de Licencia',
+                `Vas a cambiar la licencia de <b>${deviceId}</b> a <b>${actionText}</b>. ¿Estás seguro?`,
+                'Sí, cambiar',
+                'Cancelar'
+            )
+            if (!confirmed) return;
+
+            try {
+                showToast('Cambiando tipo...', 'success')
+
+                let updateData = { type: newType };
+                if (newType === 'demo7') {
+                    // Asignar 7 días desde hoy
+                    updateData.expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+                } else {
+                    // Permanente -> remover expires
+                    updateData.expires_at = null;
+                }
+
+                const { error } = await db.from('licenses')
+                    .update(updateData)
+                    .eq('id', id);
+
+                if (error) throw error;
+                showToast(`Licencia cambiada a ${actionText} ✓`, 'success')
+                loadDashboard()
+            } catch (err) {
+                console.error(err);
+                showToast('Error al cambiar licencia', 'error')
+            }
+        }
+
+        async function deleteLicense(id, deviceId) {
+            // DOBLE CONFIRMACIÓN
+            const first = await showConfirmModal(
+                'Eliminar Licencia',
+                `¿Estás seguro de eliminar permanentemente la licencia de <b>${deviceId}</b>? Esta acción NO se puede deshacer.`,
+                'Sí, eliminar',
+                'Cancelar'
+            )
+            if (!first) return;
+
+            const second = await showConfirmModal(
+                '⚠️ Confirmación Final',
+                `Escribimos de nuevo: se eliminará <b>${deviceId}</b> de la base de datos para siempre. ¿Confirmas?`,
+                'Eliminar definitivamente',
+                'No, cancelar'
+            )
+            if (!second) return;
+
+            try {
+                showToast('Eliminando...', 'success')
+                const { error } = await db.from('licenses')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                showToast('Licencia eliminada permanentemente', 'success')
+                loadDashboard()
+            } catch (err) {
+                console.error(err);
+                showToast('Error al eliminar', 'error')
+            }
+        }
+
+        // PWA — Service Worker se registra en el segundo <script>
+
+        // ═══════════════════════════════════
+        // Custom Confirm Modal
+        // ═══════════════════════════════════
+        function showConfirmModal(title, message, confirmText = 'Confirmar', cancelText = 'Cancelar') {
+            return new Promise((resolve) => {
+                // Remove any existing modal
+                const existing = document.getElementById('confirmModal')
+                if (existing) existing.remove()
+
+                const overlay = document.createElement('div')
+                overlay.id = 'confirmModal'
+                overlay.className = 'modal-overlay'
+                overlay.innerHTML = `
+                    <div class="modal-box">
+                        <div class="modal-icon">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <h3 style="text-align:center; font-size:0.95rem; font-weight:800; color:#f1f5f9; margin-bottom:0.5rem; letter-spacing:-0.01em;">${title.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</h3>
+                        <p style="text-align:center; font-size:0.75rem; color:#94a3b8; line-height:1.5; margin-bottom:1.25rem;">${message}</p>
+                        <div style="display:flex; gap:0.5rem;">
+                            <button id="modalCancel" style="flex:1; padding:0.6rem; border-radius:0.6rem; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; background:rgba(51,65,85,0.5); border:1px solid rgba(100,116,139,0.2); color:#94a3b8; cursor:pointer; transition:all 0.15s;">${cancelText}</button>
+                            <button id="modalConfirm" style="flex:1; padding:0.6rem; border-radius:0.6rem; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#f87171; cursor:pointer; transition:all 0.15s;">${confirmText}</button>
+                        </div>
+                    </div>
+                `
+
+                document.body.appendChild(overlay)
+                requestAnimationFrame(() => overlay.classList.add('active'))
+
+                const close = (result) => {
+                    overlay.classList.remove('active')
+                    setTimeout(() => overlay.remove(), 200)
+                    resolve(result)
+                }
+
+                overlay.querySelector('#modalConfirm').onclick = () => close(true)
+                overlay.querySelector('#modalCancel').onclick = () => close(false)
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) close(false)
+                })
+            })
+        }
+
+        // (SW eliminado — única registración en script 2)
+    </script>
+    <!-- Install PWA Button (Hidden by default) -->
+    <button id="installPwaBtn"
+        class="fixed bottom-6 right-6 z-50 bg-yellow-400 text-slate-900 px-6 py-3 rounded-full font-black uppercase text-xs shadow-lg shadow-yellow-400/20 active:scale-95 transition-all hidden items-center gap-2">
+        <i class="fa-solid fa-download"></i> Instalar App
+    </button>
+
+    <!-- Modal HTML Structure y Templates omitidos por brevedad pero dejados intactos -->
+    <!-- Modal de confirmación se crea dinámicamente via showConfirmModal() -->
+
+    <!-- Scripts -->
+    <script>
+        const _APP_VERSION = '1.0.3';
+        // Cliente Supabase único: usa 'db' definido en el script principal (línea 528)
+
+        // --- PWA INSTALLATION LOGIC ---
+        let deferredPrompt;
+        const installBtn = document.getElementById('installPwaBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent Chrome 67 and earlier from automatically showing the prompt
+            e.preventDefault();
+            // Stash the event so it can be triggered later.
+            deferredPrompt = e;
+            // Update UI to notify the user they can add to home screen
+            installBtn.style.display = 'flex';
+            installBtn.classList.remove('hidden');
+        });
+
+        installBtn.addEventListener('click', async () => {
+            // hide our user interface that shows our A2HS button
+            installBtn.style.display = 'none';
+            installBtn.classList.add('hidden');
+            // Show the prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+            // We've used the prompt, and can't use it again, throw it away
+            deferredPrompt = null;
+        });
+
+        window.addEventListener('appinstalled', () => {
+            // Hide the app-provided install promotion
+            installBtn.style.display = 'none';
+            installBtn.classList.add('hidden');
+            // Clear the deferredPrompt so it can be garbage collected
+            deferredPrompt = null;
+            console.log('PWA was installed');
+        });
+
+        // Registrar Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW ok', reg.scope))
+                    .catch(err => console.log('SW error', err));
+            });
+        }
+
+    </script>
+</body>
+
+</html>
