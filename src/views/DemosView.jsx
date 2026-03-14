@@ -75,8 +75,13 @@ export default function DemosView() {
   };
 
   const filtered = demos.filter(d => 
-    d.device_id.toLowerCase().includes(search.toLowerCase())
+    d.device_id.toLowerCase().includes(search.toLowerCase()) ||
+    (d.alias && d.alias.toLowerCase().includes(search.toLowerCase()))
   );
+
+  const now = new Date();
+  const activeDemos = filtered.filter(d => new Date(d.expires_at) >= now);
+  const expiredDemos = filtered.filter(d => new Date(d.expires_at) < now);
 
   return (
     <div className="space-y-4 animate-slide-up">

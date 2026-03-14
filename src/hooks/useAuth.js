@@ -104,7 +104,10 @@ export function useAuth() {
             name: "admin",
             displayName: "Administrator",
         },
-        pubKeyCredParams: [{alg: -7, type: "public-key"}],
+        pubKeyCredParams: [
+            {alg: -7, type: "public-key"}, // ES256
+            {alg: -257, type: "public-key"} // RS256
+        ],
         authenticatorSelection: {
             authenticatorAttachment: "platform", // forces local biometric like TouchID/FaceID/Windows Hello
         },
