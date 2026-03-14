@@ -6,6 +6,7 @@ ALTER TABLE licenses ADD COLUMN IF NOT EXISTS last_ip text;
 
 ALTER TABLE demos ADD COLUMN IF NOT EXISTS last_active_at timestamp with time zone;
 ALTER TABLE demos ADD COLUMN IF NOT EXISTS last_ip text;
+ALTER TABLE demos ADD COLUMN IF NOT EXISTS last_seen_at timestamp with time zone;
 
 -- 2. Creamos la función para que los clientes hagan Ping directo a la DB
 CREATE OR REPLACE FUNCTION register_ping(p_device_id text, p_product_id text, p_is_demo boolean)
