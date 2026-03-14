@@ -12,9 +12,10 @@ export async function hashDeviceId(devId, salt) {
 
 export const PRODUCTS = {
   tasas: {
-    name: 'Tasas al Día',
-    shortName: 'TASAS',
-    prefix: 'TASAS-',
+    name: 'Precios al Día (Revendedores)',
+    shortName: 'REVENDEDORES',
+    prefix: 'RVRS-',
+    legacyPrefix: 'TASAS-',
     salt: 'TASAS_ALDIA_2024_SECURE_SALT_V1',
     color: '#fcd535',
     icon: 'fa-gauge-high'
@@ -29,7 +30,7 @@ export const PRODUCTS = {
   },
   comida_rapida: {
     name: 'Precios al Día (Comida Rápida)',
-    shortName: 'COMIDA RÁPIDA',
+    shortName: 'COMIDA RAPIDA',
     prefix: 'CRP-',
     salt: 'PRECIOS_ALDIA_COMIDA_RAPIDA_2026',
     color: '#fb7185',

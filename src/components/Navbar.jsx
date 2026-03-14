@@ -1,11 +1,12 @@
 import React from 'react';
-import { LogOut, LayoutDashboard, Key, Clock } from 'lucide-react';
+import { LogOut, LayoutDashboard, Key, Clock, Users } from 'lucide-react';
 
 export default function Navbar({ activeTab, onTabChange, onLogout }) {
   const tabs = [
     { id: 'generator', label: 'Generar', icon: Key },
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'dashboard', label: 'Licencias', icon: LayoutDashboard },
     { id: 'demos', label: 'Demos', icon: Clock },
+    { id: 'installations', label: 'Registros', icon: Users },
   ];
 
   return (

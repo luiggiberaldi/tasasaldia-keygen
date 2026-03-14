@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import GeneratorView from './views/GeneratorView';
 import DashboardView from './views/DashboardView';
 import DemosView from './views/DemosView';
+import InstallationsView from './views/InstallationsView';
 import LoginView from './views/LoginView';
 
 function App() {
@@ -46,6 +47,7 @@ function App() {
         {activeTab === 'generator' && <GeneratorView />}
         {activeTab === 'dashboard' && <DashboardView />}
         {activeTab === 'demos' && <DemosView />}
+        {activeTab === 'installations' && <InstallationsView />}
       </main>
 
       <Navbar 
