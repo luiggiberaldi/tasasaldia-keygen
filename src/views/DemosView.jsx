@@ -198,7 +198,7 @@ function DemoCard({ demo, onDelete, onEditAlias }) {
   const expiresAt = new Date(demo.expires_at);
   const now = new Date();
   const isExpired = expiresAt < now;
-  const activity = getActivityStatus(demo.last_active_at);
+  const activity = getActivityStatus(demo.last_seen_at || demo.last_active_at);
   
   const diffMs = Math.abs(expiresAt - now);
   const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -234,11 +234,11 @@ function DemoCard({ demo, onDelete, onEditAlias }) {
                 <div className={`w-1.5 h-1.5 rounded-full ${activity.color} ${activity.color === 'bg-emerald-500' ? 'animate-pulse' : ''}`} />
                 {activity.text}
               </span>
-              {demo.last_ip && (
+              {(demo.ip_address || demo.last_ip) && (
                 <>
                   <span className="text-white/20 text-[10px] hidden sm:inline-block">&bull;</span>
                   <span className="text-[9px] font-mono text-slate-500">
-                    IP: <span className="text-slate-300">{demo.last_ip}</span>
+                    IP: <span className="text-slate-300">{demo.ip_address || demo.last_ip}</span>
                   </span>
                 </>
               )}

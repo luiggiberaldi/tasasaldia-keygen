@@ -291,7 +291,7 @@ function getActivityStatus(lastActiveStr) {
 function LicenseCard({ license, onRevoke, onEditAlias }) {
   const p = PRODUCTS[license.product_id] || { color: '#94a3b8', shortName: license.product_id };
   const isPermanent = license.type === 'permanent';
-  const activity = getActivityStatus(license.last_active_at);
+  const activity = getActivityStatus(license.last_seen_at);
 
   return (
     <div className="glass-card flex items-center gap-4 group">
@@ -344,11 +344,11 @@ function LicenseCard({ license, onRevoke, onEditAlias }) {
             <div className={`w-1.5 h-1.5 rounded-full ${activity.color} ${activity.color === 'bg-emerald-500' ? 'animate-pulse' : ''}`} />
             {activity.text}
           </span>
-          {license.last_ip && (
+          {license.ip_address && (
             <>
               <span className="text-white/20 text-[10px] hidden sm:inline-block">&bull;</span>
               <span className="text-[9px] font-mono text-slate-500">
-                IP: <span className="text-slate-300">{license.last_ip}</span>
+                IP: <span className="text-slate-300">{license.ip_address}</span>
               </span>
             </>
           )}
