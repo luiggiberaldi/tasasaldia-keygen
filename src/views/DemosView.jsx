@@ -19,7 +19,27 @@ export default function DemosView() {
         .order('expires_at', { ascending: true });
 
       if (error) throw error;
-      setDemos(data || []);
+
+      // Enriquecer demos con last_seen_at e ip_address de la tabla licenses
+      const { data: licenses } = await supabase
+        .from('licenses')
+        .select('device_id, product_id, last_seen_at, ip_address');
+
+      const licenseMap = {};
+      (licenses || []).forEach(l => {
+        licenseMap[`${l.device_id}__${l.product_id}`] = l;
+      });
+
+      const enriched = (data || []).map(demo => {
+        const lic = licenseMap[`${demo.device_id}__${demo.product_id}`];
+        return {
+          ...demo,
+          last_seen_at: demo.last_seen_at || lic?.last_seen_at || null,
+          ip_address: demo.ip_address || lic?.ip_address || null,
+        };
+      });
+
+      setDemos(enriched);
     } catch (err) {
       console.error(err);
     } finally {
