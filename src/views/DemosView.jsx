@@ -25,7 +25,7 @@ export default function DemosView() {
       // La tabla licenses tiene last_seen_at contaminado por triggers del sistema
       const { data: licenses } = await supabase
         .from('licenses')
-        .select('device_id, product_id, last_seen_at, ip_address, created_at, client_name');
+        .select('device_id, product_id, type, last_seen_at, ip_address, created_at, client_name');
 
       const licenseMap = {};
       (licenses || []).forEach(l => {
@@ -50,8 +50,11 @@ export default function DemosView() {
           last_seen_at: demo.last_seen_at || licLastSeen || null,
           ip_address: demo.ip_address || lic?.ip_address || null,
           client_name: demo.client_name || lic?.client_name || null,
+          _licenseType: lic?.type || null,
         };
-      });
+      })
+      // Excluir demos cuya licencia ya fue promovida a permanente
+      .filter(demo => demo._licenseType !== 'permanent');
 
       setDemos(enriched);
     } catch (err) {
