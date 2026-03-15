@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Clock, Trash2, Smartphone, RefreshCw, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Search, Clock, Trash2, Smartphone, RefreshCw, AlertTriangle, ShieldAlert, Crown } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { PRODUCTS } from '../utils/license';
 
@@ -96,6 +96,32 @@ export default function DemosView() {
     }
   };
 
+  const handleActivatePermanent = async (deviceId, productId) => {
+    if (!confirm(`Activar licencia PERMANENTE para ${deviceId}?\n\nEsto reactivara el dispositivo con acceso ilimitado.`)) return;
+    setIsLoading(true);
+    try {
+      // 1. Usar el RPC existente para hacer permanente
+      const { error } = await supabase.rpc('admin_make_permanent_secure', {
+        p_device_id: deviceId,
+        p_product_id: productId
+      });
+      if (error) throw error;
+
+      // 2. Asegurar que la licencia este activa
+      await supabase
+        .from('licenses')
+        .update({ active: true, type: 'permanent', expires_at: null })
+        .eq('device_id', deviceId)
+        .eq('product_id', productId);
+
+      fetchDemos();
+    } catch (err) {
+      console.error(err);
+      alert('Error al activar licencia permanente: ' + (err.message || err));
+      setIsLoading(false);
+    }
+  };
+
   const handleEditAlias = (demo) => {
     setAliasInput(demo.alias || '');
     setAliasConfirm(demo);
@@ -169,7 +195,7 @@ export default function DemosView() {
               ) : (
                 <div className="grid gap-2">
                   {activeDemos.map(d => (
-                    <DemoCard key={`${d.device_id}-${d.product_id}`} demo={d} onRevoke={handleRevoke} onEditAlias={() => handleEditAlias(d)} />
+                    <DemoCard key={`${d.device_id}-${d.product_id}`} demo={d} onRevoke={handleRevoke} onEditAlias={() => handleEditAlias(d)} onActivatePermanent={handleActivatePermanent} />
                   ))}
                 </div>
               )}
@@ -186,7 +212,7 @@ export default function DemosView() {
               ) : (
                 <div className="grid gap-2 opacity-80">
                   {expiredDemos.map(d => (
-                    <DemoCard key={`${d.device_id}-${d.product_id}`} demo={d} onRevoke={handleRevoke} onEditAlias={() => handleEditAlias(d)} />
+                    <DemoCard key={`${d.device_id}-${d.product_id}`} demo={d} onRevoke={handleRevoke} onEditAlias={() => handleEditAlias(d)} onActivatePermanent={handleActivatePermanent} />
                   ))}
                 </div>
               )}
@@ -242,7 +268,7 @@ function getActivityStatus(lastActiveStr) {
   return { color: 'bg-rose-500', text: `Hace ${Math.floor(diffHours / 24)}d`, label: 'bg-rose-500/10 text-rose-400 border-rose-500/20' };
 }
 
-function DemoCard({ demo, onRevoke, onEditAlias }) {
+function DemoCard({ demo, onRevoke, onEditAlias, onActivatePermanent }) {
   const p = PRODUCTS[demo.product_id] || { color: '#94a3b8', shortName: demo.product_id };
   const expiresAt = new Date(demo.expires_at);
   const now = new Date();
@@ -313,15 +339,26 @@ function DemoCard({ demo, onRevoke, onEditAlias }) {
           </span>
         </div>
         
-        {!isExpired && (
-          <button 
-            onClick={() => onRevoke(demo.device_id, demo.product_id)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-rose-400 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500 hover:text-white rounded-lg transition-all text-[9.5px] font-black uppercase tracking-wider"
-            title="Cancelar y vencer demo inmediatamente"
-          >
-            <ShieldAlert size={12} /> Anular Demo
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {isExpired && onActivatePermanent && (
+            <button 
+              onClick={() => onActivatePermanent(demo.device_id, demo.product_id)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500 hover:text-white rounded-lg transition-all text-[9.5px] font-black uppercase tracking-wider"
+              title="Activar licencia permanente"
+            >
+              <Crown size={12} /> Permanente
+            </button>
+          )}
+          {!isExpired && (
+            <button 
+              onClick={() => onRevoke(demo.device_id, demo.product_id)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-rose-400 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500 hover:text-white rounded-lg transition-all text-[9.5px] font-black uppercase tracking-wider"
+              title="Cancelar y vencer demo inmediatamente"
+            >
+              <ShieldAlert size={12} /> Anular Demo
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
