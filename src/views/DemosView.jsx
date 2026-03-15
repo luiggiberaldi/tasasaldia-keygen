@@ -13,6 +13,16 @@ export default function DemosView() {
   const fetchDemos = async () => {
     setIsLoading(true);
     try {
+      // Auto-desactivar demos vencidos antes de cargar la lista
+      try {
+        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deactivate-expired-demos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}'
+        });
+      } catch (e) { /* silencioso */ }
+
+
       const { data, error } = await supabase
         .from('demos')
         .select('*')
