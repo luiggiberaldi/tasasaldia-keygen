@@ -111,7 +111,8 @@ export default function DemosView() {
 
   const filtered = demos.filter(d => 
     d.device_id.toLowerCase().includes(search.toLowerCase()) ||
-    (d.alias && d.alias.toLowerCase().includes(search.toLowerCase()))
+    (d.alias && d.alias.toLowerCase().includes(search.toLowerCase())) ||
+    (d.client_name && d.client_name.toLowerCase().includes(search.toLowerCase()))
   );
 
   const now = new Date();
@@ -248,8 +249,8 @@ function DemoCard({ demo, onRevoke, onEditAlias }) {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-[13px] font-black text-white font-mono tracking-tight flex items-center gap-2">
-              <span>{demo.alias || demo.client_name || demo.device_id}</span>
-              {demo.alias && (
+              <span>{demo.client_name || demo.alias || demo.device_id}</span>
+              {(demo.client_name || demo.alias) && (
                 <span className="text-[10px] font-normal text-slate-500">
                   ({demo.device_id})
                 </span>
