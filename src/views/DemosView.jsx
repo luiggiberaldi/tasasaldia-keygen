@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Clock, Trash2, Smartphone, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Search, Clock, Trash2, Smartphone, RefreshCw, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { PRODUCTS } from '../utils/license';
 
@@ -20,10 +20,12 @@ export default function DemosView() {
 
       if (error) throw error;
 
-      // Enriquecer demos con last_seen_at e ip_address de la tabla licenses
+      // Enriquecer demos con ip_address de la tabla licenses
+      // NOTA: last_seen_at solo se usa del demo si existe (proviene de heartbeat real)
+      // La tabla licenses tiene last_seen_at contaminado por triggers del sistema
       const { data: licenses } = await supabase
         .from('licenses')
-        .select('device_id, product_id, last_seen_at, ip_address');
+        .select('device_id, product_id, last_seen_at, ip_address, created_at, client_name');
 
       const licenseMap = {};
       (licenses || []).forEach(l => {
@@ -32,10 +34,22 @@ export default function DemosView() {
 
       const enriched = (data || []).map(demo => {
         const lic = licenseMap[`${demo.device_id}__${demo.product_id}`];
+        // Solo usar last_seen_at de licenses si es diferente a created_at 
+        // (indica que un heartbeat real lo actualizo, no un trigger del sistema)
+        let licLastSeen = null;
+        if (lic?.last_seen_at && lic?.created_at) {
+          const seenTime = new Date(lic.last_seen_at).getTime();
+          const createdTime = new Date(lic.created_at).getTime();
+          // Si hay mas de 60 segundos de diferencia, es un heartbeat real
+          if (Math.abs(seenTime - createdTime) > 60000) {
+            licLastSeen = lic.last_seen_at;
+          }
+        }
         return {
           ...demo,
-          last_seen_at: demo.last_seen_at || lic?.last_seen_at || null,
+          last_seen_at: demo.last_seen_at || licLastSeen || null,
           ip_address: demo.ip_address || lic?.ip_address || null,
+          client_name: demo.client_name || lic?.client_name || null,
         };
       });
 
@@ -51,20 +65,21 @@ export default function DemosView() {
     fetchDemos();
   }, []);
 
-  const handleDelete = async (deviceId, productId) => {
-    if (!confirm(`¿Eliminar demo de ${deviceId}?`)) return;
-    
+  const handleRevoke = async (deviceId, productId) => {
+    if (!confirm(`¿Anular permanentemente el demo de ${deviceId}?\n\nEsto lo enviará a vencidos y bloqueará nuevas pruebas de este dispositivo.`)) return;
+    setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from('demos')
-        .delete()
-        .eq('device_id', deviceId)
-        .eq('product_id', productId);
+      const { error } = await supabase.rpc('revoke_demo_secure', {
+        p_device_id: deviceId,
+        p_product_id: productId
+      });
 
       if (error) throw error;
       fetchDemos();
     } catch (err) {
-      alert('Error al eliminar');
+      console.error(err);
+      alert('Error al anular demo');
+      setIsLoading(false);
     }
   };
 
@@ -140,7 +155,7 @@ export default function DemosView() {
               ) : (
                 <div className="grid gap-2">
                   {activeDemos.map(d => (
-                    <DemoCard key={`${d.device_id}-${d.product_id}`} demo={d} onDelete={handleDelete} onEditAlias={() => handleEditAlias(d)} />
+                    <DemoCard key={`${d.device_id}-${d.product_id}`} demo={d} onRevoke={handleRevoke} onEditAlias={() => handleEditAlias(d)} />
                   ))}
                 </div>
               )}
@@ -157,7 +172,7 @@ export default function DemosView() {
               ) : (
                 <div className="grid gap-2 opacity-80">
                   {expiredDemos.map(d => (
-                    <DemoCard key={`${d.device_id}-${d.product_id}`} demo={d} onDelete={handleDelete} onEditAlias={() => handleEditAlias(d)} />
+                    <DemoCard key={`${d.device_id}-${d.product_id}`} demo={d} onRevoke={handleRevoke} onEditAlias={() => handleEditAlias(d)} />
                   ))}
                 </div>
               )}
@@ -213,7 +228,7 @@ function getActivityStatus(lastActiveStr) {
   return { color: 'bg-rose-500', text: `Hace ${Math.floor(diffHours / 24)}d`, label: 'bg-rose-500/10 text-rose-400 border-rose-500/20' };
 }
 
-function DemoCard({ demo, onDelete, onEditAlias }) {
+function DemoCard({ demo, onRevoke, onEditAlias }) {
   const p = PRODUCTS[demo.product_id] || { color: '#94a3b8', shortName: demo.product_id };
   const expiresAt = new Date(demo.expires_at);
   const now = new Date();
@@ -233,7 +248,7 @@ function DemoCard({ demo, onDelete, onEditAlias }) {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-[13px] font-black text-white font-mono tracking-tight flex items-center gap-2">
-              <span>{demo.alias || demo.device_id}</span>
+              <span>{demo.alias || demo.client_name || demo.device_id}</span>
               {demo.alias && (
                 <span className="text-[10px] font-normal text-slate-500">
                   ({demo.device_id})
@@ -284,12 +299,13 @@ function DemoCard({ demo, onDelete, onEditAlias }) {
           </span>
         </div>
         
-        {isExpired && (
+        {!isExpired && (
           <button 
-            onClick={() => onDelete(demo.device_id, demo.product_id)}
-            className="p-2 text-rose-400 hover:bg-rose-400/10 rounded-lg transition-all"
+            onClick={() => onRevoke(demo.device_id, demo.product_id)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-rose-400 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500 hover:text-white rounded-lg transition-all text-[9.5px] font-black uppercase tracking-wider"
+            title="Cancelar y vencer demo inmediatamente"
           >
-            <Trash2 size={16} />
+            <ShieldAlert size={12} /> Anular Demo
           </button>
         )}
       </div>

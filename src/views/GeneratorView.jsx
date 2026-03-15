@@ -33,16 +33,13 @@ export default function GeneratorView() {
         expiresAt.setDate(expiresAt.getDate() + 7);
       }
 
-      const { data, error } = await supabase.from('licenses').insert([
-        {
-          device_id: deviceId.trim().toUpperCase(),
-          code: code,
-          product_id: currentProduct,
-          type: licenseType,
-          expires_at: expiresAt?.toISOString() || null,
-          active: true
-        }
-      ]);
+      const { error } = await supabase.rpc('admin_generate_license_secure', {
+        p_device_id: deviceId.trim().toUpperCase(),
+        p_product_id: currentProduct,
+        p_type: licenseType,
+        p_code: code,
+        p_expires_at: expiresAt?.toISOString() || null
+      });
 
       if (error) throw error;
       

@@ -16,7 +16,7 @@ export const PRODUCTS = {
     shortName: 'REVENDEDORES',
     prefix: 'RVRS-',
     legacyPrefix: 'TASAS-',
-    salt: 'TASAS_ALDIA_2024_SECURE_SALT_V1',
+    salt: 'PRECIOS_ALDIA_revendedor',
     color: '#fcd535',
     icon: 'fa-gauge-high'
   },

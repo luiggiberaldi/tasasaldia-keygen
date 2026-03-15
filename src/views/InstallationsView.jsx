@@ -45,17 +45,14 @@ export default function InstallationsView() {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
 
-      await supabase.from('licenses')
-        .update({ type: 'demo7', active: true, code, expires_at: expiresAt.toISOString() })
-        .eq('id', device.id);
+      const { error } = await supabase.rpc('admin_activate_demo_secure', {
+        p_device_id: device.device_id,
+        p_product_id: device.product_id,
+        p_code: code,
+        p_expires_at: expiresAt.toISOString()
+      });
 
-      await supabase.from('demos').upsert({
-        device_id: device.device_id,
-        product_id: device.product_id,
-        expires_at: expiresAt.toISOString(),
-        app_version: 'admin',
-      }, { onConflict: 'device_id,product_id' });
-
+      if (error) throw error;
       fetchDevices();
     } catch (err) {
       console.error(err);
@@ -72,10 +69,13 @@ export default function InstallationsView() {
       if (!product) throw new Error('Producto no encontrado');
       const code = await hashDeviceId(device.device_id, product.salt);
 
-      await supabase.from('licenses')
-        .update({ type: 'permanent', active: true, code, expires_at: null })
-        .eq('id', device.id);
+      const { error } = await supabase.rpc('admin_make_permanent_secure', {
+        p_device_id: device.device_id,
+        p_product_id: device.product_id,
+        p_code: code
+      });
 
+      if (error) throw error;
       fetchDevices();
     } catch (err) {
       console.error(err);
@@ -86,9 +86,13 @@ export default function InstallationsView() {
   };
 
   const handleDelete = async (device) => {
-    if (!confirm(`Eliminar registro de ${device.device_id}?`)) return;
+    if (!confirm(`¿Eliminar registro de ${device.device_id}?\nEl equipo podrá volver a registrarse al abrir la app.`)) return;
     try {
-      await supabase.from('licenses').delete().eq('id', device.id);
+      const { error } = await supabase.rpc('admin_delete_record_secure', {
+        p_device_id: device.device_id,
+        p_product_id: device.product_id
+      });
+      if (error) throw error;
       fetchDevices();
     } catch (err) {
       alert('Error al eliminar');

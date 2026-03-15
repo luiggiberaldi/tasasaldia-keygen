@@ -56,7 +56,11 @@ export default function DashboardView() {
     if (!revokeConfirm) return;
     setIsLoading(true);
     try {
-      const { error } = await supabase.from('licenses').delete().eq('id', revokeConfirm.id);
+      // Usar RPC seguro: borra tanto la licencia como el registro del demo
+      const { error } = await supabase.rpc('admin_delete_record_secure', {
+        p_device_id: revokeConfirm.device_id,
+        p_product_id: revokeConfirm.product_id
+      });
       if (error) throw error;
       setRevokeConfirm(null);
       fetchLicenses();
@@ -233,7 +237,7 @@ export default function DashboardView() {
             <LicenseCard 
               key={l.id} 
               license={l} 
-              onRevoke={() => setRevokeConfirm({ id: l.id, deviceId: l.device_id })} 
+              onRevoke={() => setRevokeConfirm({ id: l.id, device_id: l.device_id, product_id: l.product_id })} 
               onEditAlias={() => handleEditAlias(l)}
               onActivateDemo={() => handleActivateDemo(l)}
               onMakePermanent={() => handleMakePermanent(l)}
@@ -376,7 +380,7 @@ function LicenseCard({ license, onRevoke, onEditAlias, onActivateDemo, onMakePer
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-1.5 mb-1">
              <h3 className="font-mono text-[13px] font-black text-white leading-none tracking-tight flex items-center gap-2">
-              <span>{license.alias || license.device_id}</span>
+              <span>{license.alias || license.client_name || license.device_id}</span>
               {license.alias && (
                 <span className="text-[10px] font-normal text-slate-500 hidden sm:inline-block">
                   ({license.device_id})
