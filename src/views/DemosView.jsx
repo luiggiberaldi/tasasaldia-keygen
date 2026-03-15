@@ -100,19 +100,13 @@ export default function DemosView() {
     if (!confirm(`Activar licencia PERMANENTE para ${deviceId}?\n\nEsto reactivara el dispositivo con acceso ilimitado.`)) return;
     setIsLoading(true);
     try {
-      // 1. Usar el RPC existente para hacer permanente
-      const { error } = await supabase.rpc('admin_make_permanent_secure', {
-        p_device_id: deviceId,
-        p_product_id: productId
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/activate-permanent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_id: deviceId, product_id: productId })
       });
-      if (error) throw error;
-
-      // 2. Asegurar que la licencia este activa
-      await supabase
-        .from('licenses')
-        .update({ active: true, type: 'permanent', expires_at: null })
-        .eq('device_id', deviceId)
-        .eq('product_id', productId);
+      const result = await res.json();
+      if (!result.success) throw new Error(result.error || 'Error desconocido');
 
       fetchDemos();
     } catch (err) {
