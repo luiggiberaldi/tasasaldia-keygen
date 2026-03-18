@@ -11,13 +11,15 @@ export default function GeneratorView() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Auto-detect product from prefix
+  // Auto-detect product from prefix (Desactivado para permitir selección manual en caso de prefijos viejos/incorrectos)
+  /*
   useEffect(() => {
     const v = deviceId.trim().toUpperCase();
     if (v.startsWith('TAS') && currentProduct !== 'tasas') setCurrentProduct('tasas');
     if (v.startsWith('PDA') && currentProduct !== 'bodega') setCurrentProduct('bodega');
     if (v.startsWith('CRP') && currentProduct !== 'comida_rapida') setCurrentProduct('comida_rapida');
   }, [deviceId]);
+  */
 
   const handleGenerate = async () => {
     if (!deviceId.trim()) return;
