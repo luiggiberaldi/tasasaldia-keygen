@@ -1,12 +1,10 @@
 import React from 'react';
-import { LogOut, LayoutDashboard, Key, Clock, Users } from 'lucide-react';
+import { LogOut, LayoutDashboard, Key } from 'lucide-react';
 
 export default function Navbar({ activeTab, onTabChange, onLogout }) {
   const tabs = [
     { id: 'generator', label: 'Generar', icon: Key },
-    { id: 'dashboard', label: 'Licencias', icon: LayoutDashboard },
-    { id: 'demos', label: 'Demos', icon: Clock },
-    { id: 'installations', label: 'Registros', icon: Users },
+    { id: 'dashboard', label: 'Panel', icon: LayoutDashboard },
   ];
 
   return (
@@ -19,14 +17,14 @@ export default function Navbar({ activeTab, onTabChange, onLogout }) {
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
             className={`
-              flex items-center gap-2 px-4 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all
+              flex items-center gap-2 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all
               ${isActive 
                 ? 'bg-yellow-400 text-slate-950 shadow-lg shadow-yellow-400/20' 
                 : 'text-slate-400 hover:text-white hover:bg-white/5'}
             `}
           >
             <Icon size={14} strokeWidth={3} />
-            <span className={isActive ? 'block' : 'hidden md:block'}>{tab.label}</span>
+            <span>{tab.label}</span>
           </button>
         );
       })}
