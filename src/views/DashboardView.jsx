@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, RefreshCw, Smartphone, Trash2, Play, Crown, Clock, ShieldAlert, ShieldCheck, Users, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Search, RefreshCw, Smartphone, Trash2, Play, Crown, Clock, ShieldAlert, ShieldCheck, Users, ChevronLeft, ChevronRight, Filter, Download } from 'lucide-react';
 import { supabase } from '../services/supabase';
 import { PRODUCTS, hashDeviceId } from '../utils/license';
 
@@ -136,6 +136,28 @@ export default function DashboardView() {
           p_product_id: license.product_id
         });
         if (error) throw error;
+      }
+
+      if (action === 'download_backup') {
+        const { data, error } = await supabase.from('device_backups').select('backup_data').eq('device_id', license.device_id).single();
+        if (error) {
+            if (error.code === 'PGRST116') throw new Error('El equipo aún no ha subido ningún respaldo a la nube.');
+            throw error;
+        }
+        
+        const blob = new Blob([JSON.stringify(data.backup_data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const safeName = (license.alias || license.client_name || license.device_id).replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        a.download = `backup_${safeName}_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        setActionLoading(null);
+        return; // No need to refetch licenses for download
       }
 
       setConfirmModal(null);
@@ -287,18 +309,26 @@ export default function DashboardView() {
               }
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirmModal(null)} className="flex-1 py-3 rounded-xl border border-white/10 text-slate-400 font-bold uppercase text-[10px] tracking-widest hover:bg-white/5 transition-all">
+              <button 
+                onClick={() => setConfirmModal(null)} 
+                disabled={actionLoading === confirmModal?.license?.id}
+                className="flex-1 py-3 rounded-xl border border-white/10 text-slate-400 font-bold uppercase text-[10px] tracking-widest hover:bg-white/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                 Cancelar
               </button>
               <button
                 onClick={() => handleAction(confirmModal.action, confirmModal.license)}
-                className={`flex-1 py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-2 ${
+                disabled={actionLoading === confirmModal?.license?.id}
+                className={`flex-1 py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                   confirmModal.action === 'revoke'
                     ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500 hover:text-white'
                     : 'bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500 hover:text-white'
                 }`}
               >
-                Confirmar
+                {actionLoading === confirmModal?.license?.id ? (
+                  <RefreshCw size={14} className="animate-spin" />
+                ) : (
+                  'Confirmar'
+                )}
               </button>
             </div>
           </div>
@@ -551,6 +581,10 @@ function getAvailableActions(license, isExpiredDemo) {
   }
 
   if (license.type === 'permanent') {
+    actions.push({
+      id: 'download_backup', label: 'Backup', icon: Download,
+      className: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
+    });
     actions.push({
       id: 'revoke', label: 'Revocar', icon: ShieldAlert,
       className: 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20'

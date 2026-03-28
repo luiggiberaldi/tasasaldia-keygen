@@ -17,7 +17,7 @@ BEGIN
   SET 
     type = 'revoked',
     active = false,
-    code = null,
+    code = 'REVOKED',
     expires_at = null
   WHERE device_id = p_device_id AND product_id = p_product_id;
 END;
