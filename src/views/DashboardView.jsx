@@ -109,7 +109,7 @@ export default function DashboardView() {
       })
       .subscribe((status) => {
         if (status === 'CHANNEL_ERROR') {
-          handleError(new Error('Error en suscripción realtime'), 'DashboardView');
+          console.warn('[DashboardView] Suscripción realtime desconectada, reintentando...');
         }
       });
 
@@ -207,7 +207,11 @@ export default function DashboardView() {
                   clearTimeout(timeout); sub.unsubscribe(); resolve('completed');
                 }
               })
-              .subscribe();
+              .subscribe((status) => {
+                if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+                  clearTimeout(timeout); resolve('timeout');
+                }
+              });
           });
 
           if (result === 'timeout') throw new Error('El equipo no respondió en 30 segundos. Asegúrate de que esté encendido con la app abierta y actualizada.');
