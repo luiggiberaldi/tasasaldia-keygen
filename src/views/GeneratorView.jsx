@@ -1,54 +1,64 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Key, Smartphone, Copy, Check, Send } from 'lucide-react';
 import { PRODUCTS, hashDeviceId } from '../utils/license';
 import { supabase } from '../services/supabase';
+import { DEMO_DAYS, RPC_TIMEOUT_MS } from '../utils/constants';
+import { handleError, withTimeout } from '../utils/errors';
+
+const MAX_DEVICE_ID_LENGTH = 100;
 
 export default function GeneratorView() {
   const [currentProduct, setCurrentProduct] = useState('tasas');
   const [deviceId, setDeviceId] = useState('');
-  const [licenseType, setLicenseType] = useState('demo7'); // demo7 or permanent
+  const [licenseType, setLicenseType] = useState('demo7');
   const [result, setResult] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
 
-  // Auto-detect product from prefix (Desactivado para permitir selección manual en caso de prefijos viejos/incorrectos)
-  /*
-  useEffect(() => {
-    const v = deviceId.trim().toUpperCase();
-    if (v.startsWith('TAS') && currentProduct !== 'tasas') setCurrentProduct('tasas');
-    if (v.startsWith('PDA') && currentProduct !== 'bodega') setCurrentProduct('bodega');
-    if (v.startsWith('CRP') && currentProduct !== 'comida_rapida') setCurrentProduct('comida_rapida');
-  }, [deviceId]);
-  */
+  const handleDeviceIdChange = (e) => {
+    const val = e.target.value.slice(0, MAX_DEVICE_ID_LENGTH);
+    setDeviceId(val);
+    setErrorMsg(null);
+  };
 
   const handleGenerate = async () => {
-    if (!deviceId.trim()) return;
+    const trimmed = deviceId.trim().toUpperCase();
+    if (!trimmed) return;
+
     setIsGenerating(true);
-    
+    setErrorMsg(null);
+    setResult(null);
+
     try {
       const product = PRODUCTS[currentProduct];
-      const code = await hashDeviceId(deviceId.trim().toUpperCase(), product.salt);
-      
+      if (!product?.salt) throw new Error('Producto no configurado correctamente');
+
+      const code = await hashDeviceId(trimmed, product.salt);
+
       let expiresAt = null;
       if (licenseType === 'demo7') {
         expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 7);
+        expiresAt.setDate(expiresAt.getDate() + DEMO_DAYS);
       }
 
-      const { error } = await supabase.rpc('admin_generate_license_secure', {
-        p_device_id: deviceId.trim().toUpperCase(),
-        p_product_id: currentProduct,
-        p_type: licenseType,
-        p_code: code,
-        p_expires_at: expiresAt?.toISOString() || null
-      });
+      const { error } = await withTimeout(
+        supabase.rpc('admin_generate_license_secure', {
+          p_device_id: trimmed,
+          p_product_id: currentProduct,
+          p_type: licenseType,
+          p_code: code,
+          p_expires_at: expiresAt?.toISOString() || null,
+        }),
+        RPC_TIMEOUT_MS,
+        'Generar licencia'
+      );
 
       if (error) throw error;
-      
+
       setResult(code);
     } catch (err) {
-      console.error(err);
-      alert('Error al generar licencia');
+      setErrorMsg(handleError(err, 'GeneratorView'));
     } finally {
       setIsGenerating(false);
     }
@@ -61,6 +71,13 @@ export default function GeneratorView() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const sendWhatsApp = () => {
+    const phone = import.meta.env.VITE_WHATSAPP_ADMIN;
+    if (!phone || !result) return;
+    const msg = encodeURIComponent(`Tu código de licencia: *${result}*`);
+    window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
+  };
+
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Product Selection */}
@@ -71,8 +88,8 @@ export default function GeneratorView() {
             onClick={() => setCurrentProduct(id)}
             className={`
               flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all
-              ${currentProduct === id 
-                ? 'bg-slate-900 border-yellow-400/50 text-white shadow-lg' 
+              ${currentProduct === id
+                ? 'bg-slate-900 border-yellow-400/50 text-white shadow-lg'
                 : 'bg-slate-900/40 border-white/5 text-slate-500 hover:border-white/10'}
             `}
           >
@@ -96,8 +113,9 @@ export default function GeneratorView() {
         <input
           type="text"
           value={deviceId}
-          onChange={(e) => setDeviceId(e.target.value)}
+          onChange={handleDeviceIdChange}
           placeholder="TASAS-XXXX"
+          maxLength={MAX_DEVICE_ID_LENGTH}
           className="w-full bg-slate-950 border-2 border-white/5 rounded-xl px-4 py-4 text-xl font-mono font-bold text-white focus:outline-none focus:border-yellow-400/50 transition-all placeholder:text-slate-800"
         />
 
@@ -111,8 +129,8 @@ export default function GeneratorView() {
               onClick={() => setLicenseType(t.id)}
               className={`
                 flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all
-                ${licenseType === t.id 
-                  ? 'bg-slate-800 border-white/10 text-white shadow-md' 
+                ${licenseType === t.id
+                  ? 'bg-slate-800 border-white/10 text-white shadow-md'
                   : 'bg-slate-950/50 border-white/5 text-slate-500'}
               `}
             >
@@ -121,13 +139,19 @@ export default function GeneratorView() {
           ))}
         </div>
 
-        <button 
+        {errorMsg && (
+          <p className="text-rose-400 text-[10px] font-bold uppercase tracking-widest bg-rose-500/10 border border-rose-500/20 rounded-xl px-3 py-2">
+            {errorMsg}
+          </p>
+        )}
+
+        <button
           onClick={handleGenerate}
           disabled={!deviceId.trim() || isGenerating}
           className="btn-primary w-full disabled:opacity-20 flex items-center justify-center gap-2 group"
         >
           {isGenerating ? (
-             <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
           ) : (
             <Key size={14} strokeWidth={3} className="group-hover:rotate-12 transition-transform" />
           )}
@@ -146,14 +170,17 @@ export default function GeneratorView() {
             <span className="text-3xl font-mono font-black text-white tracking-[0.1em]">{result}</span>
           </div>
           <div className="flex gap-2">
-             <button 
+            <button
               onClick={copyToClipboard}
               className="flex-1 btn-secondary flex items-center justify-center gap-2 h-12"
             >
               {copied ? <Check size={14} /> : <Copy size={14} />}
               {copied ? 'Copiado' : 'Copiar'}
             </button>
-            <button className="flex-1 bg-sky-500 text-slate-950 font-black uppercase text-[10px] tracking-widest rounded-lg flex items-center justify-center gap-2 hover:brightness-110 active:scale-95 transition-all h-12">
+            <button
+              onClick={sendWhatsApp}
+              className="flex-1 bg-sky-500 text-slate-950 font-black uppercase text-[10px] tracking-widest rounded-lg flex items-center justify-center gap-2 hover:brightness-110 active:scale-95 transition-all h-12"
+            >
               <Send size={14} strokeWidth={3} /> WhatsApp
             </button>
           </div>

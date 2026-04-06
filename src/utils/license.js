@@ -6,7 +6,7 @@ export async function hashDeviceId(devId, salt) {
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('')
     .toUpperCase();
-  
+
   return `ACTIV-${hex.slice(0, 4)}-${hex.slice(4, 8)}`;
 }
 
@@ -16,7 +16,8 @@ export const PRODUCTS = {
     shortName: 'REVENDEDORES',
     prefix: 'RVRS-',
     legacyPrefix: 'TASAS-',
-    salt: 'PRECIOS_ALDIA_revendedor',
+    appName: 'TasasAlDia',
+    salt: import.meta.env.VITE_LICENSE_SALT_TASAS,
     color: '#fcd535',
     icon: 'fa-gauge-high'
   },
@@ -24,7 +25,8 @@ export const PRODUCTS = {
     name: 'Precios al Día (Bodega)',
     shortName: 'BODEGA',
     prefix: 'PDA-',
-    salt: 'PRECIOS_ALDIA_BODEGA_2024_SECURE_SALT_V1',
+    appName: 'TasasAlDia_Bodegas',
+    salt: import.meta.env.VITE_LICENSE_SALT_BODEGA,
     color: '#38bdf8',
     icon: 'fa-shop'
   },
@@ -32,7 +34,8 @@ export const PRODUCTS = {
     name: 'Precios al Día (Comida Rápida)',
     shortName: 'COMIDA RAPIDA',
     prefix: 'CRP-',
-    salt: 'PRECIOS_ALDIA_COMIDA_RAPIDA_2026',
+    appName: 'TasasAlDia_ComidaRapida',
+    salt: import.meta.env.VITE_LICENSE_SALT_COMIDA,
     color: '#fb7185',
     icon: 'fa-burger'
   }

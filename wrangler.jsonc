@@ -1,0 +1,9 @@
+{
+  "name": "tasasaldia-keygen",
+  "main": "./worker.js",
+  "compatibility_date": "2024-12-01",
+  "assets": {
+    "directory": "./dist/",
+    "binding": "ASSETS"
+  }
+}

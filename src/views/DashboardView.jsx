@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Search, RefreshCw, Smartphone, Trash2, Play, Crown, Clock, ShieldAlert, ShieldCheck, Users, ChevronLeft, ChevronRight, Filter, Download } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Search, RefreshCw, Smartphone, Trash2, Play, Crown, Clock, ShieldAlert, Users, Filter, Download } from 'lucide-react';
 import { supabase } from '../services/supabase';
+import { supabaseCloud } from '../services/supabaseCloud';
 import { PRODUCTS, hashDeviceId } from '../utils/license';
+import { DEMO_DAYS, RPC_TIMEOUT_MS } from '../utils/constants';
+import { handleError, withTimeout } from '../utils/errors';
 
 const TABS = [
   { id: 'permanent', label: 'Permanentes', icon: Crown, color: 'sky' },
@@ -9,6 +12,13 @@ const TABS = [
   { id: 'revoked', label: 'Revocadas', icon: ShieldAlert, color: 'rose' },
   { id: 'registered', label: 'Sin Licencia', icon: Users, color: 'violet' },
 ];
+
+const TAB_COLORS = {
+  sky: '#38bdf8',
+  amber: '#f59e0b',
+  rose: '#f43f5e',
+  violet: '#8b5cf6',
+};
 
 export default function DashboardView() {
   const [licenses, setLicenses] = useState([]);
@@ -27,7 +37,6 @@ export default function DashboardView() {
     try {
       let query = supabase.from('licenses').select('*');
 
-      // Filter by tab
       if (activeTab === 'permanent') {
         query = query.eq('type', 'permanent').eq('active', true);
       } else if (activeTab === 'demo') {
@@ -40,24 +49,26 @@ export default function DashboardView() {
 
       if (productFilter !== 'all') query = query.eq('product_id', productFilter);
       if (search) {
-        query = query.or(`device_id.ilike.%${search}%,alias.ilike.%${search}%,client_name.ilike.%${search}%`);
+        // Sanitizar: limitar longitud para evitar DoS
+        const safeSearch = search.slice(0, 100);
+        query = query.or(`device_id.ilike.%${safeSearch}%,alias.ilike.%${safeSearch}%,client_name.ilike.%${safeSearch}%`);
       }
 
-      query = query.order('last_seen_at', { ascending: false, nullsFirst: false })
-                    .order('created_at', { ascending: false });
+      query = query
+        .order('last_seen_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false });
 
       const { data, error } = await query;
       if (error) throw error;
       setLicenses(data || []);
     } catch (err) {
-      console.error(err);
+      handleError(err, 'DashboardView.fetchLicenses');
       setLicenses([]);
     } finally {
       setIsLoading(false);
     }
   }, [activeTab, productFilter, search]);
 
-  // Fetch counts for all tabs
   const fetchCounts = useCallback(async () => {
     try {
       const [perm, demo, rev, reg] = await Promise.all([
@@ -72,7 +83,9 @@ export default function DashboardView() {
         revoked: rev.count || 0,
         registered: reg.count || 0,
       });
-    } catch (e) { }
+    } catch (err) {
+      handleError(err, 'DashboardView.fetchCounts');
+    }
   }, []);
 
   useEffect(() => {
@@ -80,18 +93,28 @@ export default function DashboardView() {
     fetchCounts();
   }, [fetchLicenses, fetchCounts]);
 
-  // Realtime subscription
+  // Refs para acceder a la versión más reciente de las funciones sin re-suscribir
+  const fetchLicensesRef = useRef(fetchLicenses);
+  const fetchCountsRef = useRef(fetchCounts);
+  useEffect(() => { fetchLicensesRef.current = fetchLicenses; }, [fetchLicenses]);
+  useEffect(() => { fetchCountsRef.current = fetchCounts; }, [fetchCounts]);
+
+  // Suscripción realtime — solo se monta/desmonta una vez
   useEffect(() => {
     const channel = supabase
       .channel('licenses_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'licenses' }, () => {
-        fetchLicenses();
-        fetchCounts();
+        fetchLicensesRef.current();
+        fetchCountsRef.current();
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          handleError(new Error('Error en suscripción realtime'), 'DashboardView');
+        }
+      });
 
     return () => { channel.unsubscribe(); };
-  }, [fetchLicenses, fetchCounts]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ========================
   // ACTIONS
@@ -100,72 +123,134 @@ export default function DashboardView() {
     setActionLoading(license.id);
     try {
       const product = PRODUCTS[license.product_id];
-      if (!product && (action === 'demo' || action === 'permanent')) throw new Error('Producto no encontrado');
 
       if (action === 'revoke') {
-        const { error } = await supabase.rpc('admin_revoke_license_secure', {
-          p_device_id: license.device_id,
-          p_product_id: license.product_id
-        });
+        const { error } = await withTimeout(
+          supabase.rpc('admin_revoke_license_secure', {
+            p_device_id: license.device_id,
+            p_product_id: license.product_id,
+          }),
+          RPC_TIMEOUT_MS, 'Revocar licencia'
+        );
         if (error) throw error;
 
       } else if (action === 'demo') {
+        if (!product?.salt) throw new Error('Producto no encontrado');
         const code = await hashDeviceId(license.device_id, product.salt);
         const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 7);
-        const { error } = await supabase.rpc('admin_activate_demo_secure', {
-          p_device_id: license.device_id,
-          p_product_id: license.product_id,
-          p_code: code,
-          p_expires_at: expiresAt.toISOString()
-        });
+        expiresAt.setDate(expiresAt.getDate() + DEMO_DAYS);
+        const { error } = await withTimeout(
+          supabase.rpc('admin_activate_demo_secure', {
+            p_device_id: license.device_id,
+            p_product_id: license.product_id,
+            p_code: code,
+            p_expires_at: expiresAt.toISOString(),
+          }),
+          RPC_TIMEOUT_MS, 'Activar demo'
+        );
         if (error) throw error;
 
       } else if (action === 'permanent') {
+        if (!product?.salt) throw new Error('Producto no encontrado');
         const code = await hashDeviceId(license.device_id, product.salt);
-        const { error } = await supabase.rpc('admin_make_permanent_secure', {
-          p_device_id: license.device_id,
-          p_product_id: license.product_id,
-          p_code: code
-        });
+        const { error } = await withTimeout(
+          supabase.rpc('admin_make_permanent_secure', {
+            p_device_id: license.device_id,
+            p_product_id: license.product_id,
+            p_code: code,
+          }),
+          RPC_TIMEOUT_MS, 'Hacer permanente'
+        );
         if (error) throw error;
 
       } else if (action === 'reset') {
-        const { error } = await supabase.rpc('admin_reset_to_registered_secure', {
-          p_device_id: license.device_id,
-          p_product_id: license.product_id
-        });
+        const { error } = await withTimeout(
+          supabase.rpc('admin_reset_to_registered_secure', {
+            p_device_id: license.device_id,
+            p_product_id: license.product_id,
+          }),
+          RPC_TIMEOUT_MS, 'Resetear licencia'
+        );
         if (error) throw error;
-      }
 
-      if (action === 'download_backup') {
-        const { data, error } = await supabase.from('device_backups').select('backup_data').eq('device_id', license.device_id).single();
-        if (error) {
-            if (error.code === 'PGRST116') throw new Error('El equipo aún no ha subido ningún respaldo a la nube.');
-            throw error;
+      } else if (action === 'download_backup') {
+        if (!supabaseCloud) throw new Error('Supabase Cloud no configurado.');
+
+        // 1. Verificar si ya existe un backup guardado
+        const { data: existingBackup } = await supabaseCloud
+          .from('cloud_backups')
+          .select('backup_data, updated_at')
+          .eq('device_id', license.device_id)
+          .maybeSingle();
+
+        let backupData = existingBackup?.backup_data || null;
+
+        // 2. Si no hay backup previo, solicitar al dispositivo y esperar 30s
+        if (!backupData) {
+          const { error: reqError } = await supabaseCloud.from('backup_requests').upsert({
+            device_id: license.device_id,
+            status: 'pending',
+            requested_at: new Date().toISOString(),
+            completed_at: null,
+          }, { onConflict: 'device_id' });
+          if (reqError) throw new Error(`No se pudo crear la solicitud: ${reqError.message}`);
+
+          const result = await new Promise((resolve) => {
+            const timeout = setTimeout(() => { sub.unsubscribe(); resolve('timeout'); }, 30000);
+            const sub = supabaseCloud
+              .channel(`admin_backup_wait_${license.device_id}`)
+              .on('postgres_changes', {
+                event: 'UPDATE', schema: 'public', table: 'backup_requests',
+                filter: `device_id=eq.${license.device_id}`,
+              }, (payload) => {
+                if (payload.new?.status === 'completed') {
+                  clearTimeout(timeout); sub.unsubscribe(); resolve('completed');
+                }
+              })
+              .subscribe();
+          });
+
+          if (result === 'timeout') throw new Error('El equipo no respondió en 30 segundos. Asegúrate de que esté encendido con la app abierta y actualizada.');
+
+          // Leer el backup recién subido
+          const { data: freshBackup, error: fetchErr } = await supabaseCloud
+            .from('cloud_backups').select('backup_data').eq('device_id', license.device_id).single();
+          if (fetchErr) throw new Error('El equipo respondió pero no se pudo obtener el backup.');
+          backupData = freshBackup.backup_data;
         }
-        
-        const blob = new Blob([JSON.stringify(data.backup_data, null, 2)], { type: 'application/json' });
+
+        const raw = backupData;
+        const exportData = (raw && typeof raw === 'object' && 'data' in raw)
+          ? raw
+          : {
+              timestamp: new Date().toISOString(),
+              version: '2.0',
+              appName: PRODUCTS[license.product_id]?.appName || 'TasasAlDia',
+              data: raw,
+            };
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        const safeName = (license.alias || license.client_name || license.device_id).replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const safeName = (license.alias || license.client_name || license.device_id)
+          .replace(/[^a-z0-9]/gi, '_')
+          .toLowerCase();
         a.download = `backup_${safeName}_${new Date().toISOString().split('T')[0]}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        
+
         setActionLoading(null);
-        return; // No need to refetch licenses for download
+        return;
       }
 
       setConfirmModal(null);
       fetchLicenses();
       fetchCounts();
     } catch (err) {
-      console.error(err);
-      alert(`Error: ${err.message || 'Operacion fallida'}`);
+      alert(`Error: ${handleError(err, `DashboardView.${action}`)}`);
     } finally {
       setActionLoading(null);
     }
@@ -182,7 +267,7 @@ export default function DashboardView() {
       setAliasModal(null);
       fetchLicenses();
     } catch (err) {
-      alert('Error al guardar alias');
+      alert(`Error: ${handleError(err, 'DashboardView.saveAlias')}`);
     }
   };
 
@@ -199,19 +284,20 @@ export default function DashboardView() {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           const count = counts[tab.id];
+          const color = TAB_COLORS[tab.color];
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
                 isActive
-                  ? `bg-${tab.color}-500/20 text-${tab.color}-400 border border-${tab.color}-500/30`
+                  ? 'border'
                   : 'text-slate-500 hover:text-white hover:bg-white/5 border border-transparent'
               }`}
-              style={isActive ? { 
-                backgroundColor: `color-mix(in srgb, ${tab.color === 'sky' ? '#38bdf8' : tab.color === 'amber' ? '#f59e0b' : tab.color === 'rose' ? '#f43f5e' : '#8b5cf6'} 15%, transparent)`,
-                color: tab.color === 'sky' ? '#38bdf8' : tab.color === 'amber' ? '#f59e0b' : tab.color === 'rose' ? '#f43f5e' : '#8b5cf6',
-                borderColor: `color-mix(in srgb, ${tab.color === 'sky' ? '#38bdf8' : tab.color === 'amber' ? '#f59e0b' : tab.color === 'rose' ? '#f43f5e' : '#8b5cf6'} 30%, transparent)`
+              style={isActive ? {
+                backgroundColor: `color-mix(in srgb, ${color} 15%, transparent)`,
+                color,
+                borderColor: `color-mix(in srgb, ${color} 30%, transparent)`,
               } : {}}
             >
               <Icon size={16} strokeWidth={2.5} />
@@ -235,7 +321,10 @@ export default function DashboardView() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <button onClick={() => { fetchLicenses(); fetchCounts(); }} className="flex items-center justify-center bg-slate-950 border border-white/10 rounded-xl px-3 text-yellow-400 hover:bg-yellow-400/10 hover:border-yellow-400/30 transition-all">
+          <button
+            onClick={() => { fetchLicenses(); fetchCounts(); }}
+            className="flex items-center justify-center bg-slate-950 border border-white/10 rounded-xl px-3 text-yellow-400 hover:bg-yellow-400/10 hover:border-yellow-400/30 transition-all"
+          >
             <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
           </button>
         </div>
@@ -256,7 +345,14 @@ export default function DashboardView() {
 
       {/* Demo sub-sections */}
       {activeTab === 'demo' && !isLoading && licenses.length > 0 && (
-        <DemoSections licenses={licenses} now={now} onAction={handleAction} onEditAlias={(l) => { setAliasInput(l.alias || ''); setAliasModal(l); }} actionLoading={actionLoading} setConfirmModal={setConfirmModal} />
+        <DemoSections
+          licenses={licenses}
+          now={now}
+          onAction={handleAction}
+          onEditAlias={(l) => { setAliasInput(l.alias || ''); setAliasModal(l); }}
+          actionLoading={actionLoading}
+          setConfirmModal={setConfirmModal}
+        />
       )}
 
       {/* Regular list for non-demo tabs */}
@@ -304,15 +400,16 @@ export default function DashboardView() {
             </div>
             <p className="text-slate-300 text-sm mb-6">
               {confirmModal.action === 'revoke'
-                ? <>Revocar la licencia de <strong className="text-white font-mono">{confirmModal.license.alias || confirmModal.license.device_id}</strong>? El dispositivo perdera el acceso premium.</>
+                ? <>Revocar la licencia de <strong className="text-white font-mono">{confirmModal.license.alias || confirmModal.license.device_id}</strong>? El dispositivo perderá el acceso premium.</>
                 : <>Resetear <strong className="text-white font-mono">{confirmModal.license.alias || confirmModal.license.device_id}</strong> a estado sin licencia?</>
               }
             </p>
             <div className="flex gap-3">
-              <button 
-                onClick={() => setConfirmModal(null)} 
+              <button
+                onClick={() => setConfirmModal(null)}
                 disabled={actionLoading === confirmModal?.license?.id}
-                className="flex-1 py-3 rounded-xl border border-white/10 text-slate-400 font-bold uppercase text-[10px] tracking-widest hover:bg-white/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                className="flex-1 py-3 rounded-xl border border-white/10 text-slate-400 font-bold uppercase text-[10px] tracking-widest hover:bg-white/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 Cancelar
               </button>
               <button
@@ -353,10 +450,16 @@ export default function DashboardView() {
               onKeyDown={e => e.key === 'Enter' && executeSaveAlias()}
             />
             <div className="flex gap-3">
-              <button onClick={() => setAliasModal(null)} className="flex-1 py-3 rounded-xl border border-white/10 text-slate-400 font-bold uppercase text-[10px] tracking-widest hover:bg-white/5 transition-all">
+              <button
+                onClick={() => setAliasModal(null)}
+                className="flex-1 py-3 rounded-xl border border-white/10 text-slate-400 font-bold uppercase text-[10px] tracking-widest hover:bg-white/5 transition-all"
+              >
                 Cancelar
               </button>
-              <button onClick={executeSaveAlias} className="flex-1 py-3 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold uppercase text-[10px] tracking-widest hover:bg-emerald-500 hover:text-white transition-all">
+              <button
+                onClick={executeSaveAlias}
+                className="flex-1 py-3 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold uppercase text-[10px] tracking-widest hover:bg-emerald-500 hover:text-white transition-all"
+              >
                 Guardar
               </button>
             </div>
@@ -376,7 +479,6 @@ function DemoSections({ licenses, now, onAction, onEditAlias, actionLoading, set
 
   return (
     <div className="space-y-4">
-      {/* Active */}
       <div className="space-y-2">
         <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500 flex items-center gap-2 px-1">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -402,7 +504,6 @@ function DemoSections({ licenses, now, onAction, onEditAlias, actionLoading, set
         )}
       </div>
 
-      {/* Expired */}
       <div className="space-y-2 pt-2 border-t border-white/5">
         <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 flex items-center gap-2 px-1">
           <div className="w-1.5 h-1.5 rounded-full bg-slate-500" />
@@ -442,7 +543,6 @@ function LicenseCard({ license, tab, now, onAction, onEditAlias, isActionLoading
   const typeInfo = getTypeInfo(license, now);
   const isExpiredDemo = license.type === 'demo7' && license.expires_at && new Date(license.expires_at) < now;
 
-  // Demo time info
   let demoTimeText = null;
   if (license.type === 'demo7' && license.expires_at) {
     const expiresAt = new Date(license.expires_at);
@@ -454,7 +554,6 @@ function LicenseCard({ license, tab, now, onAction, onEditAlias, isActionLoading
       : `${days}d ${hours}h restantes`;
   }
 
-  // Actions available based on current state
   const actions = getAvailableActions(license, isExpiredDemo);
 
   return (
@@ -462,7 +561,7 @@ function LicenseCard({ license, tab, now, onAction, onEditAlias, isActionLoading
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center border border-white/5 relative shrink-0">
           <Smartphone size={18} className="text-slate-400" />
-          <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-slate-950" style={{ backgroundColor: p.color }} />
+          <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-slate-952" style={{ backgroundColor: p.color }} />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -507,7 +606,6 @@ function LicenseCard({ license, tab, now, onAction, onEditAlias, isActionLoading
         </div>
       </div>
 
-      {/* Demo timer */}
       {demoTimeText && (
         <div className="flex items-center gap-2 mt-2 bg-slate-950/50 rounded-lg px-3 py-2 border border-white/5">
           <Clock size={12} className={isExpiredDemo ? 'text-rose-400' : 'text-emerald-400'} />
@@ -517,7 +615,6 @@ function LicenseCard({ license, tab, now, onAction, onEditAlias, isActionLoading
         </div>
       )}
 
-      {/* Actions */}
       {actions.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-white/5">
           {actions.map(action => (
@@ -544,62 +641,29 @@ function getAvailableActions(license, isExpiredDemo) {
   const actions = [];
 
   if (license.type === 'registered') {
-    actions.push({
-      id: 'demo', label: 'Demo (7d)', icon: Play,
-      className: 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
-    });
-    actions.push({
-      id: 'permanent', label: 'Permanente', icon: Crown,
-      className: 'bg-sky-500/10 text-sky-400 border-sky-500/20 hover:bg-sky-500/20'
-    });
+    actions.push({ id: 'demo', label: 'Demo (7d)', icon: Play, className: 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20' });
+    actions.push({ id: 'permanent', label: 'Permanente', icon: Crown, className: 'bg-sky-500/10 text-sky-400 border-sky-500/20 hover:bg-sky-500/20' });
   }
 
   if (license.type === 'demo7' && !isExpiredDemo) {
-    actions.push({
-      id: 'permanent', label: 'Permanente', icon: Crown,
-      className: 'bg-sky-500/10 text-sky-400 border-sky-500/20 hover:bg-sky-500/20'
-    });
-    actions.push({
-      id: 'revoke', label: 'Revocar', icon: ShieldAlert,
-      className: 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20'
-    });
+    actions.push({ id: 'permanent', label: 'Permanente', icon: Crown, className: 'bg-sky-500/10 text-sky-400 border-sky-500/20 hover:bg-sky-500/20' });
+    actions.push({ id: 'revoke', label: 'Revocar', icon: ShieldAlert, className: 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20' });
   }
 
   if (license.type === 'demo7' && isExpiredDemo) {
-    actions.push({
-      id: 'demo', label: 'Renovar Demo', icon: Play,
-      className: 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
-    });
-    actions.push({
-      id: 'permanent', label: 'Permanente', icon: Crown,
-      className: 'bg-sky-500/10 text-sky-400 border-sky-500/20 hover:bg-sky-500/20'
-    });
-    actions.push({
-      id: 'revoke', label: 'Revocar', icon: ShieldAlert,
-      className: 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20'
-    });
+    actions.push({ id: 'demo', label: 'Renovar Demo', icon: Play, className: 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20' });
+    actions.push({ id: 'permanent', label: 'Permanente', icon: Crown, className: 'bg-sky-500/10 text-sky-400 border-sky-500/20 hover:bg-sky-500/20' });
+    actions.push({ id: 'revoke', label: 'Revocar', icon: ShieldAlert, className: 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20' });
   }
 
   if (license.type === 'permanent') {
-    actions.push({
-      id: 'download_backup', label: 'Backup', icon: Download,
-      className: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
-    });
-    actions.push({
-      id: 'revoke', label: 'Revocar', icon: ShieldAlert,
-      className: 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20'
-    });
+    actions.push({ id: 'download_backup', label: 'Backup', icon: Download, className: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20' });
+    actions.push({ id: 'revoke', label: 'Revocar', icon: ShieldAlert, className: 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20' });
   }
 
   if (license.type === 'revoked') {
-    actions.push({
-      id: 'demo', label: 'Demo (7d)', icon: Play,
-      className: 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
-    });
-    actions.push({
-      id: 'permanent', label: 'Permanente', icon: Crown,
-      className: 'bg-sky-500/10 text-sky-400 border-sky-500/20 hover:bg-sky-500/20'
-    });
+    actions.push({ id: 'demo', label: 'Demo (7d)', icon: Play, className: 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20' });
+    actions.push({ id: 'permanent', label: 'Permanente', icon: Crown, className: 'bg-sky-500/10 text-sky-400 border-sky-500/20 hover:bg-sky-500/20' });
   }
 
   return actions;
